@@ -25,6 +25,8 @@ permissions:
 
 jobs:
   opencode:
+    # Configure the Gitea runner label as:
+    # opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
     runs-on: __RUNNER_LABEL__
     steps:
       - name: Checkout repository

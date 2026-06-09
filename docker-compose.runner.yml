@@ -6,7 +6,7 @@ services:
       GITEA_INSTANCE_URL: "${GITEA_INSTANCE_URL}"
       GITEA_RUNNER_REGISTRATION_TOKEN: "${GITEA_RUNNER_REGISTRATION_TOKEN}"
       GITEA_RUNNER_NAME: "${GITEA_RUNNER_NAME:-gitea-opencode-runner}"
-      GITEA_RUNNER_LABELS: "${GITEA_RUNNER_LABELS:-opencode:docker://ghcr.io/your-org/gitea-opencode:latest}"
+      GITEA_RUNNER_LABELS: "${GITEA_RUNNER_LABELS:-opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest}"
     volumes:
       - ./runner-config.example.yaml:/config.yaml:ro
       - ./data:/data

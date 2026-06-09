@@ -24,4 +24,4 @@ host:
 
 runners:
   labels:
-    - "opencode:docker://ghcr.io/your-org/gitea-opencode:latest"
+    - "opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"

@@ -94,22 +94,19 @@ OPENCODE_WORKFLOW_TEMPLATE_URL=https://raw.githubusercontent.com/NicoChiGu/gitea
 runs-on: opencode
 ```
 
-因此 Gitea act runner 需要配置一个 `opencode` label，并让该 label 使用本项目镜像。例如：
+因此 Gitea act runner 需要配置一个 `opencode` label，并让该 label 使用你的镜像：
 
 ```text
-opencode:docker://ghcr.io/nicochigu/gitea-opencode:latest
+opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
-构建镜像：
+如果这是私有镜像，先在 runner 所在机器登录阿里云镜像仓库：
 
 ```sh
-git clone https://github.com/NicoChiGu/gitea-opencode.git
-cd gitea-opencode
-docker build -t ghcr.io/nicochigu/gitea-opencode:latest .
-docker push ghcr.io/nicochigu/gitea-opencode:latest
+docker login registry.cn-hangzhou.aliyuncs.com
 ```
 
-也可以参考仓库中的 `docker-compose.runner.yml` 和 `runner-config.example.yaml` 启动 runner。
+然后可以直接参考仓库中的 `docker-compose.runner.yml` 和 `runner-config.example.yaml` 启动 runner，不需要本地构建镜像。
 
 ## 必要 Secrets
 
