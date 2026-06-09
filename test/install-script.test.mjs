@@ -34,6 +34,17 @@ test("shell installer protects existing workflow without force", async () => {
   assert.match(result.stderr, /already exists/);
 });
 
+test("shell installer yes mode uses the default model", async () => {
+  const cwd = await gitTempRepo();
+  const result = spawnSync("sh", [installer, "--dry-run", "--yes"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/claude-sonnet-4-6"/);
+});
+
 async function gitTempRepo() {
   const cwd = await mkdtemp(join(tmpdir(), "gitea-opencode-test-"));
   spawnSync("git", ["init"], { cwd, encoding: "utf8" });

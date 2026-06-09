@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-export const defaultModel = "anthropic/claude-sonnet-4-20250514";
+export const defaultModel = "anthropic/claude-sonnet-4-6";
 
 export async function loadPayload(env) {
   const eventPath = env.GITHUB_EVENT_PATH || env.GITEA_EVENT_PATH;

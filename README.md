@@ -10,7 +10,7 @@ https://github.com/NicoChiGu/gitea-opencode
 
 ## 一键安装到目标仓库
 
-在你要启用 OpenCode 的 Gitea 项目根目录运行下面命令。安装器会创建 `.gitea/workflows/opencode.yml`，默认提交并推送当前分支。
+在你要启用 OpenCode 的 Gitea 项目根目录运行下面命令。安装器会进入终端引导，让你选择 OpenCode 模型，然后创建 `.gitea/workflows/opencode.yml`，默认提交并推送当前分支。
 
 Linux / macOS:
 
@@ -42,13 +42,21 @@ PowerShell 带参数：
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --force
 ```
 
+跳过引导，直接使用默认模型：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --yes
+```
+
 自定义 runner label 和模型：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- \
   --runner-label opencode \
-  --model anthropic/claude-sonnet-4-20250514
+  --model openai/gpt-5-codex
 ```
+
+模型必须使用 OpenCode 的 `provider/model` 格式。完整 provider 和 model 以 OpenCode/Models.dev 为准；安装器只是提供常用选项，也支持手动输入。
 
 安装器要求当前目录是 Git 仓库。默认 commit message 是：
 
@@ -66,7 +74,9 @@ Linux / macOS:
 --no-commit             写入 workflow，但不提交
 --no-push               提交 workflow，但不推送
 --runner-label <label>  Gitea runner label，默认 opencode
---model <model>         OpenCode 模型，默认 anthropic/claude-sonnet-4-20250514
+--model <model>         OpenCode 模型，格式 provider/model
+--yes, --non-interactive
+                        跳过引导并使用默认模型
 ```
 
 PowerShell 对应参数：
@@ -78,6 +88,8 @@ PowerShell 对应参数：
 -NoPush
 -RunnerLabel <label>
 -Model <model>
+-Yes
+-NonInteractive
 ```
 
 如果你需要从其他分支或镜像读取 workflow 模板，可以设置：
@@ -110,10 +122,17 @@ docker login registry.cn-hangzhou.aliyuncs.com
 
 ## 必要 Secrets
 
-在目标 Gitea 仓库或组织的 Actions Secrets 中配置：
+根据安装时选择的模型，在目标 Gitea 仓库或组织的 Actions Secrets 中配置对应 provider 的 API key。常用选项：
 
 ```text
-ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY       Anthropic: anthropic/claude-sonnet-4-6
+OPENAI_API_KEY          OpenAI: openai/gpt-5-codex, openai/gpt-5-chat-latest
+OPENCODE_API_KEY        OpenCode Zen: opencode/claude-sonnet-4
+XIAOMI_API_KEY          Xiaomi MiMo: xiaomi-token-plan-cn/mimo-v2.5-pro 等
+DEEPSEEK_API_KEY        DeepSeek: deepseek/deepseek-reasoner
+MOONSHOT_API_KEY        Moonshot/Kimi: moonshotai/kimi-k2-thinking
+MINIMAX_API_KEY         MiniMax: minimax/MiniMax-M2.5
+OPENROUTER_API_KEY      OpenRouter: openrouter/<model>
 ```
 
 可选：

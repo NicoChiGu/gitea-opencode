@@ -17,7 +17,7 @@ Required environment in Gitea Actions:
 
 Optional:
   OPENCODE_GITEA_TOKEN    Personal access token override
-  OPENCODE_MODEL          provider/model, defaults to anthropic/claude-sonnet-4-20250514
+  OPENCODE_MODEL          provider/model, defaults to anthropic/claude-sonnet-4-6
   OPENCODE_AGENT          OpenCode agent name
 `;
 
