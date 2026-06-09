@@ -1,0 +1,42 @@
+name: opencode
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request:
+    types: [opened, reopened, synchronized]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "OpenCode prompt"
+        required: true
+      create_pr:
+        description: "Create a PR when OpenCode changes files"
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+  code: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  opencode:
+    runs-on: __RUNNER_LABEL__
+    steps:
+      - name: Checkout repository
+        uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run OpenCode for Gitea
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          OPENCODE_GITEA_TOKEN: ${{ secrets.OPENCODE_GITEA_TOKEN }}
+          OPENCODE_MODEL: "__OPENCODE_MODEL__"
+        run: gitea-opencode

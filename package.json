@@ -1,0 +1,17 @@
+{
+  "name": "gitea-opencode",
+  "version": "0.1.0",
+  "description": "Gitea Actions adapter for OpenCode issue and pull request automation.",
+  "type": "module",
+  "bin": {
+    "gitea-opencode": "./bin/gitea-opencode.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:unit": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

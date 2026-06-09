@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+.nyc_output/
+.runner
+data/
+tmp/
+.DS_Store
+*.log
