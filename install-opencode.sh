@@ -5,6 +5,8 @@ RUNNER_LABEL="opencode"
 DEFAULT_MODEL="anthropic/claude-sonnet-4-6"
 MODEL=""
 MODEL_SET=0
+API_KEY_SECRET=""
+API_KEY_SECRET_SET=0
 FORCE=0
 DRY_RUN=0
 NO_COMMIT=0
@@ -24,6 +26,7 @@ Options:
   --no-push               Commit the workflow but do not push it
   --runner-label <label>  Gitea runner label, default: opencode
   --model <model>         OpenCode model in provider/model format
+  --api-key-secret <name> Gitea Actions secret name for the selected provider
   --yes, --non-interactive
                           Skip prompts and use defaults
   --help                  Show this help
@@ -57,6 +60,12 @@ while [ "$#" -gt 0 ]; do
       MODEL="${2:-}"
       [ -n "$MODEL" ] || { echo "--model requires a value" >&2; exit 2; }
       MODEL_SET=1
+      shift 2
+      ;;
+    --api-key-secret)
+      API_KEY_SECRET="${2:-}"
+      [ -n "$API_KEY_SECRET" ] || { echo "--api-key-secret requires a value" >&2; exit 2; }
+      API_KEY_SECRET_SET=1
       shift 2
       ;;
     --yes|--non-interactive)
@@ -112,7 +121,10 @@ load_template() {
 }
 
 select_model() {
-  [ "$MODEL_SET" -eq 1 ] && return
+  if [ "$MODEL_SET" -eq 1 ]; then
+    validate_model
+    return
+  fi
 
   if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
     MODEL="$DEFAULT_MODEL"
@@ -158,6 +170,10 @@ select_model() {
       ;;
   esac
 
+  validate_model
+}
+
+validate_model() {
   case "$MODEL" in
     */*) ;;
     *)
@@ -167,15 +183,74 @@ select_model() {
   esac
 }
 
+secret_for_provider() {
+  provider="${MODEL%%/*}"
+  case "$provider" in
+    anthropic) API_KEY_SECRET="ANTHROPIC_API_KEY" ;;
+    openai) API_KEY_SECRET="OPENAI_API_KEY" ;;
+    opencode) API_KEY_SECRET="OPENCODE_API_KEY" ;;
+    deepseek) API_KEY_SECRET="DEEPSEEK_API_KEY" ;;
+    moonshotai) API_KEY_SECRET="MOONSHOT_API_KEY" ;;
+    minimax) API_KEY_SECRET="MINIMAX_API_KEY" ;;
+    openrouter) API_KEY_SECRET="OPENROUTER_API_KEY" ;;
+    xiaomi-token-plan-cn|xiaomi-token-plan-sgp|xiaomi-token-plan-ams) API_KEY_SECRET="XIAOMI_API_KEY" ;;
+    *)
+      if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+        echo "Unknown provider '$provider'. Re-run with --api-key-secret <SECRET_NAME>." >&2
+        exit 2
+      fi
+      printf "Enter Gitea Actions secret name for provider '%s': " "$provider" > /dev/tty
+      IFS= read -r API_KEY_SECRET < /dev/tty || API_KEY_SECRET=""
+      ;;
+  esac
+}
+
+validate_api_key_secret() {
+  case "$API_KEY_SECRET" in
+    ""|[0-9]*|GITHUB_*|GITEA_*|*[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_]*)
+      echo "Invalid secret name: $API_KEY_SECRET" >&2
+      echo "Use only letters, numbers, and underscores; do not start with a number, GITHUB_, or GITEA_." >&2
+      exit 2
+      ;;
+  esac
+}
+
+select_api_key_secret() {
+  if [ "$API_KEY_SECRET_SET" -eq 0 ]; then
+    secret_for_provider
+  fi
+  validate_api_key_secret
+}
+
+provider_api_key_env_line() {
+  printf '          %s: ${{ secrets.%s }}' "$API_KEY_SECRET" "$API_KEY_SECRET"
+}
+
+print_next_steps() {
+  {
+    echo
+    echo "OpenCode workflow configured."
+    echo "Selected model: $MODEL"
+    echo "Add this Gitea Actions secret for the selected provider:"
+    echo "  $API_KEY_SECRET=<your api key>"
+    echo "Optional token override for Gitea writes:"
+    echo "  OPENCODE_GITEA_TOKEN=<gitea personal access token>"
+  } >&2
+}
+
 render_workflow() {
   select_model
+  select_api_key_secret
+  provider_env_line=$(provider_api_key_env_line)
   load_template | sed \
     -e "s#__RUNNER_LABEL__#$RUNNER_LABEL#g" \
+    -e "s#__PROVIDER_API_KEY_ENV__#$provider_env_line#g" \
     -e "s#__OPENCODE_MODEL__#$MODEL#g"
 }
 
 if [ "$DRY_RUN" -eq 1 ]; then
   render_workflow
+  print_next_steps
   exit 0
 fi
 
@@ -184,6 +259,7 @@ render_workflow > "$DEST"
 echo "Wrote $DEST"
 
 if [ "$NO_COMMIT" -eq 1 ]; then
+  print_next_steps
   exit 0
 fi
 
@@ -195,6 +271,7 @@ else
 fi
 
 if [ "$NO_PUSH" -eq 1 ]; then
+  print_next_steps
   exit 0
 fi
 
@@ -205,3 +282,4 @@ if [ "$BRANCH" = "HEAD" ]; then
 fi
 
 git push origin "$BRANCH"
+print_next_steps

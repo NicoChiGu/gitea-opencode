@@ -58,6 +58,14 @@ curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/insta
 
 模型必须使用 OpenCode 的 `provider/model` 格式。完整 provider 和 model 以 OpenCode/Models.dev 为准；安装器只是提供常用选项，也支持手动输入。
 
+如果手动输入的 provider 不在安装器内置映射中，可以指定 API key 对应的 Gitea Actions Secret 名称：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- \
+  --model my-provider/my-model \
+  --api-key-secret MY_PROVIDER_API_KEY
+```
+
 安装器要求当前目录是 Git 仓库。默认 commit message 是：
 
 ```text
@@ -75,6 +83,7 @@ Linux / macOS:
 --no-push               提交 workflow，但不推送
 --runner-label <label>  Gitea runner label，默认 opencode
 --model <model>         OpenCode 模型，格式 provider/model
+--api-key-secret <name> provider API key 对应的 Gitea Actions Secret 名称
 --yes, --non-interactive
                         跳过引导并使用默认模型
 ```
@@ -88,6 +97,7 @@ PowerShell 对应参数：
 -NoPush
 -RunnerLabel <label>
 -Model <model>
+-ApiKeySecret <name>
 -Yes
 -NonInteractive
 ```
@@ -122,7 +132,9 @@ docker login registry.cn-hangzhou.aliyuncs.com
 
 ## 必要 Secrets
 
-根据安装时选择的模型，在目标 Gitea 仓库或组织的 Actions Secrets 中配置对应 provider 的 API key。常用选项：
+根据安装时选择的模型，在目标 Gitea 仓库或组织的 Actions Secrets 中配置对应 provider 的 API key。安装器只会把当前模型需要的 secret 写入 `.gitea/workflows/opencode.yml`，不会把所有 provider secret 都写进去。
+
+常用映射：
 
 ```text
 ANTHROPIC_API_KEY       Anthropic: anthropic/claude-sonnet-4-6
@@ -133,6 +145,14 @@ DEEPSEEK_API_KEY        DeepSeek: deepseek/deepseek-reasoner
 MOONSHOT_API_KEY        Moonshot/Kimi: moonshotai/kimi-k2-thinking
 MINIMAX_API_KEY         MiniMax: minimax/MiniMax-M2.5
 OPENROUTER_API_KEY      OpenRouter: openrouter/<model>
+```
+
+安装器完成后也会输出最终提示，例如：
+
+```text
+Selected model: xiaomi-token-plan-cn/mimo-v2.5-pro
+Add this Gitea Actions secret for the selected provider:
+  XIAOMI_API_KEY=<your api key>
 ```
 
 可选：

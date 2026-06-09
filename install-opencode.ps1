@@ -5,6 +5,7 @@ param(
   [switch]$NoPush,
   [string]$RunnerLabel = "opencode",
   [string]$Model = "",
+  [string]$ApiKeySecret = "",
   [switch]$Yes,
   [switch]$NonInteractive
 )
@@ -82,6 +83,60 @@ function Select-OpenCodeModel {
 
 $SelectedModel = Select-OpenCodeModel
 
+if ($SelectedModel -notmatch "^[^/]+/.+$") {
+  throw "Model must use provider/model format, got: $SelectedModel"
+}
+
+function Get-ProviderFromModel([string]$Value) {
+  return ($Value -split "/", 2)[0]
+}
+
+function Get-ApiKeySecretForModel([string]$Value) {
+  if (-not [string]::IsNullOrWhiteSpace($ApiKeySecret)) {
+    return $ApiKeySecret
+  }
+
+  $Provider = Get-ProviderFromModel $Value
+  switch ($Provider) {
+    "anthropic" { return "ANTHROPIC_API_KEY" }
+    "openai" { return "OPENAI_API_KEY" }
+    "opencode" { return "OPENCODE_API_KEY" }
+    "deepseek" { return "DEEPSEEK_API_KEY" }
+    "moonshotai" { return "MOONSHOT_API_KEY" }
+    "minimax" { return "MINIMAX_API_KEY" }
+    "openrouter" { return "OPENROUTER_API_KEY" }
+    "xiaomi-token-plan-cn" { return "XIAOMI_API_KEY" }
+    "xiaomi-token-plan-sgp" { return "XIAOMI_API_KEY" }
+    "xiaomi-token-plan-ams" { return "XIAOMI_API_KEY" }
+    default {
+      if ($Yes -or $NonInteractive -or [Console]::IsInputRedirected) {
+        throw "Unknown provider '$Provider'. Re-run with -ApiKeySecret <SECRET_NAME>."
+      }
+      return Read-Host "Enter Gitea Actions secret name for provider '$Provider'"
+    }
+  }
+}
+
+function Assert-ValidSecretName([string]$Name) {
+  if ([string]::IsNullOrWhiteSpace($Name) -or $Name -notmatch "^[A-Za-z_][A-Za-z0-9_]*$" -or $Name.StartsWith("GITHUB_") -or $Name.StartsWith("GITEA_")) {
+    throw "Invalid secret name '$Name'. Use only letters, numbers, and underscores; do not start with a number, GITHUB_, or GITEA_."
+  }
+}
+
+function Write-NextSteps([string]$SelectedModel, [string]$SelectedSecret) {
+  [Console]::Error.WriteLine("")
+  [Console]::Error.WriteLine("OpenCode workflow configured.")
+  [Console]::Error.WriteLine("Selected model: $SelectedModel")
+  [Console]::Error.WriteLine("Add this Gitea Actions secret for the selected provider:")
+  [Console]::Error.WriteLine("  $SelectedSecret=<your api key>")
+  [Console]::Error.WriteLine("Optional token override for Gitea writes:")
+  [Console]::Error.WriteLine("  OPENCODE_GITEA_TOKEN=<gitea personal access token>")
+}
+
+$SelectedApiKeySecret = Get-ApiKeySecretForModel $SelectedModel
+Assert-ValidSecretName $SelectedApiKeySecret
+$ProviderApiKeyEnv = "          ${SelectedApiKeySecret}: " + '${{ secrets.' + $SelectedApiKeySecret + ' }}'
+
 if (Test-Path $Template) {
   $Workflow = Get-Content -Raw -Path $Template
 } else {
@@ -89,10 +144,12 @@ if (Test-Path $Template) {
 }
 
 $Workflow = $Workflow.Replace("__RUNNER_LABEL__", $RunnerLabel)
+$Workflow = $Workflow.Replace("__PROVIDER_API_KEY_ENV__", $ProviderApiKeyEnv)
 $Workflow = $Workflow.Replace("__OPENCODE_MODEL__", $SelectedModel)
 
 if ($DryRun) {
   Write-Output $Workflow
+  Write-NextSteps $SelectedModel $SelectedApiKeySecret
   exit 0
 }
 
@@ -101,6 +158,7 @@ Set-Content -Path $Destination -Value $Workflow -NoNewline
 Write-Output "Wrote $Destination"
 
 if ($NoCommit) {
+  Write-NextSteps $SelectedModel $SelectedApiKeySecret
   exit 0
 }
 
@@ -113,6 +171,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($NoPush) {
+  Write-NextSteps $SelectedModel $SelectedApiKeySecret
   exit 0
 }
 
@@ -122,3 +181,4 @@ if ($Branch -eq "HEAD") {
 }
 
 git push origin $Branch
+Write-NextSteps $SelectedModel $SelectedApiKeySecret

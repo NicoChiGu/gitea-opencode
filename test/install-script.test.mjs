@@ -17,7 +17,10 @@ test("shell installer dry-run renders configured workflow", async () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /runs-on: ai/);
+  assert.match(result.stdout, /ANTHROPIC_API_KEY: \$\{\{ secrets\.ANTHROPIC_API_KEY \}\}/);
+  assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
   assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/custom"/);
+  assert.match(result.stderr, /ANTHROPIC_API_KEY=<your api key>/);
 });
 
 test("shell installer protects existing workflow without force", async () => {
@@ -43,6 +46,44 @@ test("shell installer yes mode uses the default model", async () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/claude-sonnet-4-6"/);
+  assert.match(result.stdout, /ANTHROPIC_API_KEY/);
+});
+
+test("shell installer renders only the selected Xiaomi secret", async () => {
+  const cwd = await gitTempRepo();
+  const result = spawnSync("sh", [installer, "--dry-run", "--model", "xiaomi-token-plan-cn/mimo-v2.5-pro"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /XIAOMI_API_KEY: \$\{\{ secrets\.XIAOMI_API_KEY \}\}/);
+  assert.doesNotMatch(result.stdout, /ANTHROPIC_API_KEY/);
+  assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
+  assert.match(result.stderr, /XIAOMI_API_KEY=<your api key>/);
+});
+
+test("shell installer supports custom provider secret names", async () => {
+  const cwd = await gitTempRepo();
+  const result = spawnSync("sh", [installer, "--dry-run", "--model", "custom-provider/model", "--api-key-secret", "CUSTOM_PROVIDER_API_KEY"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /CUSTOM_PROVIDER_API_KEY: \$\{\{ secrets\.CUSTOM_PROVIDER_API_KEY \}\}/);
+  assert.match(result.stderr, /CUSTOM_PROVIDER_API_KEY=<your api key>/);
+});
+
+test("shell installer rejects invalid model format", async () => {
+  const cwd = await gitTempRepo();
+  const result = spawnSync("sh", [installer, "--dry-run", "--model", "openai"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /provider\/model format/);
 });
 
 async function gitTempRepo() {
