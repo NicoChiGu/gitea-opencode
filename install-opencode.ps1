@@ -9,6 +9,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $CommitMessage = "chore: add gitea opencode workflow"
+$TemplateUrl = $env:OPENCODE_WORKFLOW_TEMPLATE_URL
+if ([string]::IsNullOrWhiteSpace($TemplateUrl)) {
+  $TemplateUrl = "https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/templates/opencode.yml"
+}
 
 function Test-GitRepository {
   git rev-parse --is-inside-work-tree *> $null
@@ -22,15 +26,16 @@ if (-not (Test-GitRepository)) {
 $Template = Join-Path $PSScriptRoot "templates/opencode.yml"
 $Destination = Join-Path ".gitea" "workflows/opencode.yml"
 
-if (-not (Test-Path $Template)) {
-  throw "Workflow template not found: $Template"
-}
-
 if ((Test-Path $Destination) -and -not $Force -and -not $DryRun) {
   throw "$Destination already exists. Re-run with -Force to overwrite it."
 }
 
-$Workflow = Get-Content -Raw -Path $Template
+if (Test-Path $Template) {
+  $Workflow = Get-Content -Raw -Path $Template
+} else {
+  $Workflow = Invoke-RestMethod -Uri $TemplateUrl
+}
+
 $Workflow = $Workflow.Replace("__RUNNER_LABEL__", $RunnerLabel)
 $Workflow = $Workflow.Replace("__OPENCODE_MODEL__", $Model)
 

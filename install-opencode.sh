@@ -8,6 +8,7 @@ DRY_RUN=0
 NO_COMMIT=0
 NO_PUSH=0
 COMMIT_MESSAGE="chore: add gitea opencode workflow"
+TEMPLATE_URL="${OPENCODE_WORKFLOW_TEMPLATE_URL:-https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/templates/opencode.yml}"
 
 usage() {
   cat <<'EOF'
@@ -73,21 +74,37 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 TEMPLATE="$SCRIPT_DIR/templates/opencode.yml"
 DEST=".gitea/workflows/opencode.yml"
 
-if [ ! -f "$TEMPLATE" ]; then
-  echo "Workflow template not found: $TEMPLATE" >&2
-  exit 1
-fi
-
 if [ -f "$DEST" ] && [ "$FORCE" -ne 1 ] && [ "$DRY_RUN" -ne 1 ]; then
   echo "$DEST already exists. Re-run with --force to overwrite it." >&2
   exit 1
 fi
 
+load_template() {
+  if [ -f "$TEMPLATE" ]; then
+    cat "$TEMPLATE"
+    return
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$TEMPLATE_URL"
+    return
+  fi
+
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO- "$TEMPLATE_URL"
+    return
+  fi
+
+  echo "Workflow template not found locally, and neither curl nor wget is available." >&2
+  echo "Expected local template: $TEMPLATE" >&2
+  echo "Remote template: $TEMPLATE_URL" >&2
+  exit 1
+}
+
 render_workflow() {
-  sed \
+  load_template | sed \
     -e "s#__RUNNER_LABEL__#$RUNNER_LABEL#g" \
-    -e "s#__OPENCODE_MODEL__#$MODEL#g" \
-    "$TEMPLATE"
+    -e "s#__OPENCODE_MODEL__#$MODEL#g"
 }
 
 if [ "$DRY_RUN" -eq 1 ]; then
