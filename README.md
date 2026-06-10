@@ -122,6 +122,31 @@ runs-on: opencode
 opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
+注意：`docker://...` 必须写在 act runner 的 label 配置里，不能直接写进 workflow 的 `runs-on`。下面这种写法是错误的：
+
+```yaml
+runs-on: ubuntu-22.04:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+```
+
+Gitea 会把整串当成一个 label 去匹配，因此会报找不到在线运行器。正确方式是：
+
+```yaml
+runs-on: opencode
+```
+
+然后在 act runner 配置中加入：
+
+```yaml
+runners:
+  labels:
+    - "ubuntu-latest"
+    - "ubuntu-24.04"
+    - "ubuntu-22.04"
+    - "opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"
+```
+
+如果你的 `config.yaml` 已经把 `ubuntu-*` 绑定到了其他 Docker 镜像，保留原有配置，只追加 `opencode:docker://...` 这一行即可。修改后重启 runner，并确认 Gitea UI 的 runner 标签里出现 `opencode`。
+
 如果这是私有镜像，先在 runner 所在机器登录阿里云镜像仓库：
 
 ```sh
@@ -129,6 +154,34 @@ docker login registry.cn-hangzhou.aliyuncs.com
 ```
 
 然后可以直接参考仓库中的 `docker-compose.runner.yml` 和 `runner-config.example.yaml` 启动 runner，不需要本地构建镜像。
+
+## 故障排查
+
+### `gitea-opencode: command not found`
+
+这说明 workflow 运行在普通 `ubuntu-*` runner 镜像里，而不是 `registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest`。`gitea-opencode` 不是 Gitea 自带命令，它是本项目镜像里的适配器脚本，负责：
+
+- 读取 `GITHUB_EVENT_PATH` 中的 Gitea 事件。
+- 判断评论里是否有 `/opencode` 或 `/oc`。
+- 调用 OpenCode CLI。
+- 使用 Gitea API 回复 Issue/PR 评论。
+- 在 `fix` 类指令下创建分支、提交代码并创建 PR。
+
+修复方式：
+
+```yaml
+jobs:
+  opencode:
+    runs-on: opencode
+```
+
+并确保 act runner label 中存在：
+
+```text
+opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+```
+
+重启 runner 后，Gitea UI 应显示 `opencode` 标签在线。
 
 ## 必要 Secrets
 

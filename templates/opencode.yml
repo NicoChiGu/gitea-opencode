@@ -41,4 +41,10 @@ __PROVIDER_API_KEY_ENV__
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
           OPENCODE_GITEA_TOKEN: ${{ secrets.OPENCODE_GITEA_TOKEN }}
           OPENCODE_MODEL: "__OPENCODE_MODEL__"
-        run: gitea-opencode
+        run: |
+          if ! command -v gitea-opencode >/dev/null 2>&1; then
+            echo "::error::gitea-opencode was not found. Configure your act_runner label as 'opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest', then use 'runs-on: opencode'."
+            echo "Current PATH: $PATH"
+            exit 127
+          fi
+          gitea-opencode
