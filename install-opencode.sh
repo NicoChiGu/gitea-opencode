@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-RUNNER_LABEL="opencode"
+RUNNER_LABEL="ubuntu-22.04"
+ACTION_IMAGE="registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"
 DEFAULT_MODEL="anthropic/claude-sonnet-4-6"
 MODEL=""
 MODEL_SET=0
@@ -24,7 +25,8 @@ Options:
   --dry-run               Print the workflow instead of writing files
   --no-commit             Write the workflow but do not commit it
   --no-push               Commit the workflow but do not push it
-  --runner-label <label>  Gitea runner label, default: opencode
+  --runner-label <label>  Gitea runner label, default: ubuntu-22.04
+  --action-image <image>  Docker image used by the OpenCode action step
   --model <model>         OpenCode model in provider/model format
   --api-key-secret <name> Gitea Actions secret name for the selected provider
   --yes, --non-interactive
@@ -54,6 +56,11 @@ while [ "$#" -gt 0 ]; do
     --runner-label)
       RUNNER_LABEL="${2:-}"
       [ -n "$RUNNER_LABEL" ] || { echo "--runner-label requires a value" >&2; exit 2; }
+      shift 2
+      ;;
+    --action-image)
+      ACTION_IMAGE="${2:-}"
+      [ -n "$ACTION_IMAGE" ] || { echo "--action-image requires a value" >&2; exit 2; }
       shift 2
       ;;
     --model)
@@ -230,6 +237,8 @@ print_next_steps() {
   {
     echo
     echo "OpenCode workflow configured."
+    echo "Runner label: $RUNNER_LABEL"
+    echo "Action image: $ACTION_IMAGE"
     echo "Selected model: $MODEL"
     echo "Add this Gitea Actions secret for the selected provider:"
     echo "  $API_KEY_SECRET=<your api key>"
@@ -244,6 +253,7 @@ render_workflow() {
   provider_env_line=$(provider_api_key_env_line)
   load_template | sed \
     -e "s#__RUNNER_LABEL__#$RUNNER_LABEL#g" \
+    -e "s#__ACTION_IMAGE__#$ACTION_IMAGE#g" \
     -e "s#__PROVIDER_API_KEY_ENV__#$provider_env_line#g" \
     -e "s#__OPENCODE_MODEL__#$MODEL#g"
 }

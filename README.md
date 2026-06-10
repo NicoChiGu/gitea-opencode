@@ -48,11 +48,12 @@ curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/insta
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --yes
 ```
 
-自定义 runner label 和模型：
+自定义标准 runner label、Docker Action 镜像和模型：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- \
-  --runner-label opencode \
+  --runner-label ubuntu-22.04 \
+  --action-image registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest \
   --model openai/gpt-5-codex
 ```
 
@@ -81,7 +82,8 @@ Linux / macOS:
 --dry-run               只输出 workflow，不写文件
 --no-commit             写入 workflow，但不提交
 --no-push               提交 workflow，但不推送
---runner-label <label>  Gitea runner label，默认 opencode
+--runner-label <label>  Gitea runner label，默认 ubuntu-22.04
+--action-image <image>  OpenCode Docker Action 镜像
 --model <model>         OpenCode 模型，格式 provider/model
 --api-key-secret <name> provider API key 对应的 Gitea Actions Secret 名称
 --yes, --non-interactive
@@ -96,6 +98,7 @@ PowerShell 对应参数：
 -NoCommit
 -NoPush
 -RunnerLabel <label>
+-ActionImage <image>
 -Model <model>
 -ApiKeySecret <name>
 -Yes
@@ -108,44 +111,39 @@ PowerShell 对应参数：
 OPENCODE_WORKFLOW_TEMPLATE_URL=https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/templates/opencode.yml
 ```
 
-## Gitea Runner
+## 标准 Gitea Runner
 
 生成的 workflow 默认使用：
 
 ```yaml
-runs-on: opencode
+runs-on: ubuntu-22.04
 ```
 
-因此 Gitea act runner 需要配置一个 `opencode` label，并让该 label 使用你的镜像：
-
-```text
-opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
-```
-
-注意：`docker://...` 必须写在 act runner 的 label 配置里，不能直接写进 workflow 的 `runs-on`。下面这种写法是错误的：
+OpenCode 适配器通过 Docker Action step 运行：
 
 ```yaml
-runs-on: ubuntu-22.04:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
-Gitea 会把整串当成一个 label 去匹配，因此会报找不到在线运行器。正确方式是：
+因此你不需要给 act_runner 新增 `opencode:docker://...` label，也不需要额外编排 runner。只要你的在线 runner 已经有 `ubuntu-22.04`、`ubuntu-24.04` 或 `ubuntu-latest` 这类标准 label 即可。
+
+完整生成效果类似：
 
 ```yaml
-runs-on: opencode
+jobs:
+  opencode:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: https://github.com/actions/checkout@v4
+      - uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
-然后在 act runner 配置中加入：
+如果你的 runner 只有其他 label，安装时指定：
 
-```yaml
-runners:
-  labels:
-    - "ubuntu-latest"
-    - "ubuntu-24.04"
-    - "ubuntu-22.04"
-    - "opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"
+```sh
+curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- \
+  --runner-label ubuntu-latest
 ```
-
-如果你的 `config.yaml` 已经把 `ubuntu-*` 绑定到了其他 Docker 镜像，保留原有配置，只追加 `opencode:docker://...` 这一行即可。修改后重启 runner，并确认 Gitea UI 的 runner 标签里出现 `opencode`。
 
 如果这是私有镜像，先在 runner 所在机器登录阿里云镜像仓库：
 
@@ -153,13 +151,25 @@ runners:
 docker login registry.cn-hangzhou.aliyuncs.com
 ```
 
-然后可以直接参考仓库中的 `docker-compose.runner.yml` 和 `runner-config.example.yaml` 启动 runner，不需要本地构建镜像。
+如果 act_runner 是容器化运行，并且通过宿主机 Docker socket 拉取 action 镜像，需要确保 act_runner 能读取对应 Docker 登录凭据。
 
 ## 故障排查
 
 ### `gitea-opencode: command not found`
 
-这说明 workflow 运行在普通 `ubuntu-*` runner 镜像里，而不是 `registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest`。`gitea-opencode` 不是 Gitea 自带命令，它是本项目镜像里的适配器脚本，负责：
+新版 workflow 不再直接执行宿主 runner 里的 `gitea-opencode` 命令，而是通过：
+
+```yaml
+uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+```
+
+如果你仍然看到 `gitea-opencode: command not found`，说明目标仓库里的 `.gitea/workflows/opencode.yml` 还是旧版本。重新安装或覆盖：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --force
+```
+
+`gitea-opencode` 是本项目镜像里的适配器脚本，负责：
 
 - 读取 `GITHUB_EVENT_PATH` 中的 Gitea 事件。
 - 判断评论里是否有 `/opencode` 或 `/oc`。
@@ -167,21 +177,7 @@ docker login registry.cn-hangzhou.aliyuncs.com
 - 使用 Gitea API 回复 Issue/PR 评论。
 - 在 `fix` 类指令下创建分支、提交代码并创建 PR。
 
-修复方式：
-
-```yaml
-jobs:
-  opencode:
-    runs-on: opencode
-```
-
-并确保 act runner label 中存在：
-
-```text
-opencode:docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
-```
-
-重启 runner 后，Gitea UI 应显示 `opencode` 标签在线。
+覆盖后确认 workflow 中是 `uses: docker://...`，而不是 `run: gitea-opencode`。
 
 ## 必要 Secrets
 
