@@ -4,8 +4,8 @@ param(
   [switch]$NoCommit,
   [switch]$NoPush,
   [string]$RunnerLabel = "ubuntu-22.04",
-  [string]$ContainerImage = "registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest",
-  [string]$ActionImage = "",
+  [string]$ActionImage = "registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest",
+  [string]$ContainerImage = "",
   [string]$Model = "",
   [string]$ApiKeySecret = "",
   [switch]$Yes,
@@ -15,8 +15,8 @@ param(
 $ErrorActionPreference = "Stop"
 $CommitMessage = "chore: add gitea opencode workflow"
 $DefaultModel = "anthropic/claude-sonnet-4-6"
-if (-not [string]::IsNullOrWhiteSpace($ActionImage)) {
-  $ContainerImage = $ActionImage
+if (-not [string]::IsNullOrWhiteSpace($ContainerImage)) {
+  $ActionImage = $ContainerImage
 }
 $TemplateUrl = $env:OPENCODE_WORKFLOW_TEMPLATE_URL
 if ([string]::IsNullOrWhiteSpace($TemplateUrl)) {
@@ -132,7 +132,7 @@ function Write-NextSteps([string]$SelectedModel, [string]$SelectedSecret) {
   [Console]::Error.WriteLine("")
   [Console]::Error.WriteLine("OpenCode workflow configured.")
   [Console]::Error.WriteLine("Runner label: $RunnerLabel")
-  [Console]::Error.WriteLine("Container image: $ContainerImage")
+  [Console]::Error.WriteLine("Action image: $ActionImage")
   [Console]::Error.WriteLine("Selected model: $SelectedModel")
   [Console]::Error.WriteLine("Add this Gitea Actions secret for the selected provider:")
   [Console]::Error.WriteLine("  $SelectedSecret=<your api key>")
@@ -151,7 +151,7 @@ if (Test-Path $Template) {
 }
 
 $Workflow = $Workflow.Replace("__RUNNER_LABEL__", $RunnerLabel)
-$Workflow = $Workflow.Replace("__CONTAINER_IMAGE__", $ContainerImage)
+$Workflow = $Workflow.Replace("__ACTION_IMAGE__", $ActionImage)
 $Workflow = $Workflow.Replace("__PROVIDER_API_KEY_ENV__", $ProviderApiKeyEnv)
 $Workflow = $Workflow.Replace("__OPENCODE_MODEL__", $SelectedModel)
 

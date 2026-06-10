@@ -2,7 +2,7 @@
 set -eu
 
 RUNNER_LABEL="ubuntu-22.04"
-CONTAINER_IMAGE="registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"
+ACTION_IMAGE="registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest"
 DEFAULT_MODEL="anthropic/claude-sonnet-4-6"
 MODEL=""
 MODEL_SET=0
@@ -26,9 +26,9 @@ Options:
   --no-commit             Write the workflow but do not commit it
   --no-push               Commit the workflow but do not push it
   --runner-label <label>  Gitea runner label, default: ubuntu-22.04
+  --action-image <image>  Docker image used by the OpenCode action step
   --container-image <image>
-                          Docker image used as the OpenCode job container
-  --action-image <image>  Deprecated alias for --container-image
+                          Deprecated alias for --action-image
   --model <model>         OpenCode model in provider/model format
   --api-key-secret <name> Gitea Actions secret name for the selected provider
   --yes, --non-interactive
@@ -60,9 +60,9 @@ while [ "$#" -gt 0 ]; do
       [ -n "$RUNNER_LABEL" ] || { echo "--runner-label requires a value" >&2; exit 2; }
       shift 2
       ;;
-    --container-image|--action-image)
-      CONTAINER_IMAGE="${2:-}"
-      [ -n "$CONTAINER_IMAGE" ] || { echo "$1 requires a value" >&2; exit 2; }
+    --action-image|--container-image)
+      ACTION_IMAGE="${2:-}"
+      [ -n "$ACTION_IMAGE" ] || { echo "$1 requires a value" >&2; exit 2; }
       shift 2
       ;;
     --model)
@@ -240,7 +240,7 @@ print_next_steps() {
     echo
     echo "OpenCode workflow configured."
     echo "Runner label: $RUNNER_LABEL"
-    echo "Container image: $CONTAINER_IMAGE"
+    echo "Action image: $ACTION_IMAGE"
     echo "Selected model: $MODEL"
     echo "Add this Gitea Actions secret for the selected provider:"
     echo "  $API_KEY_SECRET=<your api key>"
@@ -255,7 +255,7 @@ render_workflow() {
   provider_env_line=$(provider_api_key_env_line)
   load_template | sed \
     -e "s#__RUNNER_LABEL__#$RUNNER_LABEL#g" \
-    -e "s#__CONTAINER_IMAGE__#$CONTAINER_IMAGE#g" \
+    -e "s#__ACTION_IMAGE__#$ACTION_IMAGE#g" \
     -e "s#__PROVIDER_API_KEY_ENV__#$provider_env_line#g" \
     -e "s#__OPENCODE_MODEL__#$MODEL#g"
 }
