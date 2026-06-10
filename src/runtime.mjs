@@ -14,8 +14,10 @@ import {
 
 export async function runAutomation(deps = {}) {
   const env = deps.env || process.env;
+  log(`Loading event payload from ${env.GITHUB_EVENT_PATH || env.GITEA_EVENT_PATH || "(none)"}`);
   const payload = deps.payload || (await loadPayload(env));
   const config = deps.config || getRuntimeConfig(env);
+  log("Validating runtime environment");
   assertRuntimeConfig(config);
   log(`Starting automation repository=${config.repository} event=${config.eventName || "(unknown)"} model=${config.model}`);
 

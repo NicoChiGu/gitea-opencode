@@ -32,5 +32,6 @@ export async function runCli(args = [], env = process.env) {
     return;
   }
 
+  console.log("[gitea-opencode] CLI starting");
   await runAutomation({ env });
 }

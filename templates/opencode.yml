@@ -42,6 +42,16 @@ __PROVIDER_API_KEY_ENV__
           OPENCODE_GITEA_TOKEN: ${{ secrets.OPENCODE_GITEA_TOKEN }}
           OPENCODE_MODEL: "__OPENCODE_MODEL__"
         run: |
+          set -eu
+          echo "[gitea-opencode] preflight started at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "[gitea-opencode] job container: __CONTAINER_IMAGE__"
+          echo "[gitea-opencode] runner label: __RUNNER_LABEL__"
           echo "[gitea-opencode] model: $OPENCODE_MODEL"
+          echo "[gitea-opencode] repository: ${GITHUB_REPOSITORY:-}"
+          echo "[gitea-opencode] event name: ${GITHUB_EVENT_NAME:-}"
+          echo "[gitea-opencode] event path: ${GITHUB_EVENT_PATH:-}"
+          echo "[gitea-opencode] workspace: ${GITHUB_WORKSPACE:-$(pwd)}"
+          echo "[gitea-opencode] PATH: $PATH"
+          echo "[gitea-opencode] command: $(command -v gitea-opencode)"
+          echo "[gitea-opencode] version: $(gitea-opencode --version)"
           gitea-opencode
