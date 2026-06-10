@@ -26,6 +26,8 @@ permissions:
 jobs:
   opencode:
     runs-on: __RUNNER_LABEL__
+    container:
+      image: __CONTAINER_IMAGE__
     steps:
       - name: Checkout repository
         uses: https://github.com/actions/checkout@v4
@@ -34,9 +36,12 @@ jobs:
           persist-credentials: false
 
       - name: Run OpenCode for Gitea
-        uses: docker://__ACTION_IMAGE__
         env:
 __PROVIDER_API_KEY_ENV__
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
           OPENCODE_GITEA_TOKEN: ${{ secrets.OPENCODE_GITEA_TOKEN }}
           OPENCODE_MODEL: "__OPENCODE_MODEL__"
+        run: |
+          echo "[gitea-opencode] job container: __CONTAINER_IMAGE__"
+          echo "[gitea-opencode] model: $OPENCODE_MODEL"
+          gitea-opencode

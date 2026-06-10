@@ -17,12 +17,14 @@ export async function runAutomation(deps = {}) {
   const payload = deps.payload || (await loadPayload(env));
   const config = deps.config || getRuntimeConfig(env);
   assertRuntimeConfig(config);
+  log(`Starting automation repository=${config.repository} event=${config.eventName || "(unknown)"} model=${config.model}`);
 
   const event = readEvent(payload, config.eventName, env);
   if (!event.shouldRun) {
     log(`Skipping OpenCode: ${event.reason}`);
     return { skipped: true, reason: event.reason };
   }
+  log(`Matched event kind=${event.eventKind} target=${event.targetKind} action=${event.directive?.action || "(none)"} actor=${event.actor || "(unknown)"}`);
 
   const client =
     deps.client ||
@@ -69,38 +71,50 @@ export async function runAutomation(deps = {}) {
 }
 
 async function explainIssue({ event, client, opencode, config }) {
+  log(`Loading issue #${event.issueNumber} for explanation`);
   const issue = await client.getIssue(event.issueNumber);
   const comments = await client.listIssueComments(event.issueNumber);
+  log(`Loaded issue #${event.issueNumber} with ${comments.length} comments`);
   const output = await opencode.run(
     issueExplainPrompt({ issue, comments, instruction: event.directive.instruction }),
     modelOptions(config)
   );
+  log(`Posting explanation to issue #${event.issueNumber}`);
   await client.createIssueComment(event.issueNumber, formatBotComment(output));
+  log(`Completed issue explanation for #${event.issueNumber}`);
   return { skipped: false, mode: "issue_explain", output };
 }
 
 async function reviewIssue({ event, client, opencode, config }) {
+  log(`Loading issue #${event.issueNumber} for review`);
   const issue = await client.getIssue(event.issueNumber);
   const comments = await client.listIssueComments(event.issueNumber);
+  log(`Loaded issue #${event.issueNumber} with ${comments.length} comments`);
   const output = await opencode.run(
     issueReviewPrompt({ issue, comments, instruction: event.directive.instruction }),
     modelOptions(config)
   );
+  log(`Posting review to issue #${event.issueNumber}`);
   await client.createIssueComment(event.issueNumber, formatBotComment(output));
+  log(`Completed issue review for #${event.issueNumber}`);
   return { skipped: false, mode: "issue_review", output };
 }
 
 async function fixIssue({ event, client, git, opencode, config }) {
+  log(`Checking write permission for ${event.actor || "(unknown)"}`);
   if (!(await hasWriteAccess(client, event.actor))) {
+    log(`Skipping issue fix because ${event.actor || "(unknown)"} lacks write permission`);
     await client.createIssueComment(event.issueNumber, formatBotComment(`Skipping: user ${event.actor || "(unknown)"} does not have write permission for this repository.`));
     return { skipped: true, mode: "issue_fix_no_permission" };
   }
 
+  log(`Loading repository and issue #${event.issueNumber} for fix`);
   const repo = await client.getRepo();
   const issue = await client.getIssue(event.issueNumber);
   const comments = await client.listIssueComments(event.issueNumber);
   const base = issue.ref || repo.default_branch || config.refName || "main";
   const branch = safeBranchName(`opencode/issue-${event.issueNumber}-${config.runId}`);
+  log(`Preparing branch ${branch} from ${base}`);
 
   await git.configureIdentity(config.gitAuthorName, config.gitAuthorEmail);
   await git.checkoutNewBranchFrom(base, branch);
@@ -111,12 +125,15 @@ async function fixIssue({ event, client, git, opencode, config }) {
   );
 
   if (!(await git.hasChanges())) {
+    log(`OpenCode completed but produced no file changes for issue #${event.issueNumber}`);
     await client.createIssueComment(event.issueNumber, formatBotComment(output || "OpenCode did not produce file changes."));
     return { skipped: false, mode: "issue_fix_no_changes", output };
   }
 
+  log(`Committing and pushing branch ${branch}`);
   await git.commitAll(`fix: address issue #${event.issueNumber}`);
   await git.pushBranch(branch, config.token);
+  log(`Creating pull request for issue #${event.issueNumber}`);
   const pr = await client.createPullRequest({
     title: `OpenCode fix for #${event.issueNumber}`,
     body: `Created by OpenCode for issue #${event.issueNumber}.\n\nInstruction:\n${event.directive.instruction}\n\nOpenCode output:\n${output || "(no output)"}`,
@@ -124,28 +141,35 @@ async function fixIssue({ event, client, git, opencode, config }) {
     base,
   });
   await client.createIssueComment(event.issueNumber, formatBotComment(`Created pull request ${pullRequestLabel(pr)}.`));
+  log(`Completed issue fix for #${event.issueNumber}; created ${pullRequestLabel(pr)}`);
   return { skipped: false, mode: "issue_fix_pr_created", branch, pr, output };
 }
 
 async function changePullRequest({ event, client, git, opencode, config }) {
+  log(`Checking write permission for ${event.actor || "(unknown)"}`);
   if (!(await hasWriteAccess(client, event.actor))) {
+    log(`Skipping PR change because ${event.actor || "(unknown)"} lacks write permission`);
     await client.createIssueComment(event.prNumber, formatBotComment(`Skipping: user ${event.actor || "(unknown)"} does not have write permission for this repository.`));
     return { skipped: true, mode: "pr_change_no_permission" };
   }
 
+  log(`Loading pull request #${event.prNumber} for requested changes`);
   const pr = event.pullRequest?.number || event.pullRequest?.index ? event.pullRequest : await client.getPull(event.prNumber);
 
   if (!isSameRepositoryPullRequest(pr, config)) {
+    log(`Skipping PR #${event.prNumber} because it is cross-repository`);
     await client.createIssueComment(event.prNumber, formatBotComment("Skipping: this pull request comes from another repository. OpenCode only pushes changes to same-repository PR branches by default."));
     return { skipped: true, mode: "pr_change_cross_repo" };
   }
 
   const headBranch = pr?.head?.ref || pr?.head?.name || pr?.head_branch || config.refName;
   if (!headBranch) throw new Error("Unable to determine pull request head branch.");
+  log(`Checking out PR head branch ${headBranch}`);
 
   await git.configureIdentity(config.gitAuthorName, config.gitAuthorEmail);
   await git.checkoutBranch(headBranch);
 
+  log(`Fetching diff for PR #${event.prNumber}`);
   const diff = await safeGetDiff(client, event.prNumber);
   const output = await opencode.run(
     pullRequestChangePrompt({
@@ -158,17 +182,21 @@ async function changePullRequest({ event, client, git, opencode, config }) {
   );
 
   if (!(await git.hasChanges())) {
+    log(`OpenCode completed but produced no file changes for PR #${event.prNumber}`);
     await client.createIssueComment(event.prNumber, formatBotComment(output || "OpenCode did not produce file changes."));
     return { skipped: false, mode: "pr_change_no_changes", output };
   }
 
+  log(`Committing and pushing changes to ${headBranch}`);
   await git.commitAll(`fix: apply OpenCode request for PR #${event.prNumber}`);
   await git.pushBranch(headBranch, config.token);
   await client.createIssueComment(event.prNumber, formatBotComment(output || "OpenCode pushed changes to this PR."));
+  log(`Completed PR change for #${event.prNumber}`);
   return { skipped: false, mode: "pr_change_pushed", branch: headBranch, output };
 }
 
 async function reviewPullRequest({ event, client, opencode, config }) {
+  log(`Loading pull request #${event.prNumber} for review`);
   const pr = event.pullRequest?.number || event.pullRequest?.index ? event.pullRequest : await client.getPull(event.prNumber);
   const actor = event.actor || pr?.user?.login;
 
@@ -177,6 +205,7 @@ async function reviewPullRequest({ event, client, opencode, config }) {
     return { skipped: true, mode: "pr_review_cross_repo" };
   }
 
+  log(`Fetching diff for PR #${event.prNumber}`);
   const diff = await safeGetDiff(client, event.prNumber);
   const output = await opencode.run(
     pullRequestReviewPrompt({
@@ -186,15 +215,19 @@ async function reviewPullRequest({ event, client, opencode, config }) {
     }),
     modelOptions(config)
   );
+  log(`Posting review to PR #${event.prNumber}`);
   await client.createIssueComment(event.prNumber, formatBotComment(output));
+  log(`Completed PR review for #${event.prNumber}`);
   return { skipped: false, mode: "pr_review", output };
 }
 
 async function runManualTask({ event, client, git, opencode, config }) {
+  log("Preparing manual workflow_dispatch task");
   await git.configureIdentity(config.gitAuthorName, config.gitAuthorEmail);
   const repo = await client.getRepo();
   const base = repo.default_branch || config.refName || "main";
   const branch = safeBranchName(`opencode/manual-${config.runId}`);
+  log(`Preparing branch ${branch} from ${base}`);
   await git.checkoutNewBranchFrom(base, branch);
 
   const output = await opencode.run(manualPrompt({ instruction: event.directive.instruction }), modelOptions(config));
@@ -208,8 +241,10 @@ async function runManualTask({ event, client, git, opencode, config }) {
     return { skipped: false, mode: "manual_changes_not_pushed", output };
   }
 
+  log(`Committing and pushing manual task branch ${branch}`);
   await git.commitAll("chore: apply manual OpenCode task");
   await git.pushBranch(branch, config.token);
+  log("Creating pull request for manual task");
   const pr = await client.createPullRequest({
     title: "OpenCode manual task",
     body: `Created by workflow_dispatch.\n\nPrompt:\n${event.directive.instruction}\n\nOpenCode output:\n${output || "(no output)"}`,

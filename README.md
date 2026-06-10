@@ -48,12 +48,12 @@ curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/insta
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --yes
 ```
 
-自定义标准 runner label、Docker Action 镜像和模型：
+自定义标准 runner label、job container 镜像和模型：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- \
   --runner-label ubuntu-22.04 \
-  --action-image registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest \
+  --container-image registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest \
   --model openai/gpt-5-codex
 ```
 
@@ -83,7 +83,9 @@ Linux / macOS:
 --no-commit             写入 workflow，但不提交
 --no-push               提交 workflow，但不推送
 --runner-label <label>  Gitea runner label，默认 ubuntu-22.04
---action-image <image>  OpenCode Docker Action 镜像
+--container-image <image>
+                        OpenCode job container 镜像
+--action-image <image>  --container-image 的兼容别名
 --model <model>         OpenCode 模型，格式 provider/model
 --api-key-secret <name> provider API key 对应的 Gitea Actions Secret 名称
 --yes, --non-interactive
@@ -98,6 +100,7 @@ PowerShell 对应参数：
 -NoCommit
 -NoPush
 -RunnerLabel <label>
+-ContainerImage <image>
 -ActionImage <image>
 -Model <model>
 -ApiKeySecret <name>
@@ -119,10 +122,11 @@ OPENCODE_WORKFLOW_TEMPLATE_URL=https://raw.githubusercontent.com/NicoChiGu/gitea
 runs-on: ubuntu-22.04
 ```
 
-OpenCode 适配器通过 Docker Action step 运行：
+OpenCode 适配器通过 job container 运行：
 
 ```yaml
-uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+container:
+  image: registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
 因此你不需要给 act_runner 新增 `opencode:docker://...` label，也不需要额外编排 runner。只要你的在线 runner 已经有 `ubuntu-22.04`、`ubuntu-24.04` 或 `ubuntu-latest` 这类标准 label 即可。
@@ -133,9 +137,11 @@ uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 jobs:
   opencode:
     runs-on: ubuntu-22.04
+    container:
+      image: registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
     steps:
       - uses: https://github.com/actions/checkout@v4
-      - uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+      - run: gitea-opencode
 ```
 
 如果你的 runner 只有其他 label，安装时指定：
@@ -155,18 +161,58 @@ docker login registry.cn-hangzhou.aliyuncs.com
 
 ## 故障排查
 
-### `gitea-opencode: command not found`
+### `failed to remove container` 或 `No such container`
 
-新版 workflow 不再直接执行宿主 runner 里的 `gitea-opencode` 命令，而是通过：
+如果日志里出现：
+
+```text
+failed to remove container: removal of container ... is already in progress
+No such container: GITEA-ACTIONS-TASK-...
+```
+
+说明目标仓库还在使用旧版 `uses: docker://...` Docker Action step。新版 workflow 已经切换为 job container，避免这条容器清理路径。
+
+重新覆盖目标仓库 workflow：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --force
+```
+
+覆盖后确认 `.gitea/workflows/opencode.yml` 中存在：
+
+```yaml
+container:
+  image: registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+```
+
+并且不再有：
 
 ```yaml
 uses: docker://registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
-如果你仍然看到 `gitea-opencode: command not found`，说明目标仓库里的 `.gitea/workflows/opencode.yml` 还是旧版本。重新安装或覆盖：
+### `gitea-opencode: command not found`
+
+新版 workflow 会在 job container 里执行 `gitea-opencode`，不是在宿主 runner 里执行。如果你仍然看到 `gitea-opencode: command not found`，说明目标仓库里的 `.gitea/workflows/opencode.yml` 还是旧版本，或者私有镜像不是用当前 Dockerfile 构建的。
+
+重新构建并推送镜像：
+
+```sh
+docker build -t registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest .
+docker push registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
+```
+
+然后覆盖 workflow：
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/install-opencode.sh | bash -s -- --force
+```
+
+覆盖后确认 workflow 中是：
+
+```yaml
+container:
+  image: registry.cn-hangzhou.aliyuncs.com/terata/gitea-opencode:latest
 ```
 
 `gitea-opencode` 是本项目镜像里的适配器脚本，负责：
@@ -176,8 +222,6 @@ curl -fsSL https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/insta
 - 调用 OpenCode CLI。
 - 使用 Gitea API 回复 Issue/PR 评论。
 - 在 `fix` 类指令下创建分支、提交代码并创建 PR。
-
-覆盖后确认 workflow 中是 `uses: docker://...`，而不是 `run: gitea-opencode`。
 
 ## 必要 Secrets
 

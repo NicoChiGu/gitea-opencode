@@ -8,11 +8,20 @@ export class OpenCodeRunner {
   }
 
   async run(prompt, { model, agent } = {}) {
+    console.log(`[gitea-opencode] Starting OpenCode model=${model || "(default)"} agent=${agent || "(default)"}`);
     const args = ["run"];
     if (model) args.push("--model", model);
     if (agent) args.push("--agent", agent);
     args.push(prompt);
-    const result = await this.spawn("opencode", args, { cwd: this.cwd, env: this.env });
+    const result = await this.spawn("opencode", args, {
+      cwd: this.cwd,
+      env: this.env,
+      streamStdout: true,
+      streamStderr: true,
+      heartbeatLabel: "OpenCode",
+      heartbeatIntervalMs: 30000,
+    });
+    console.log("[gitea-opencode] OpenCode finished");
     return result.stdout.trim() || result.stderr.trim();
   }
 }

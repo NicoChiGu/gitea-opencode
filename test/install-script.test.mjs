@@ -17,7 +17,7 @@ test("shell installer dry-run renders configured workflow", async () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /runs-on: ai/);
-  assert.match(result.stdout, /uses: docker:\/\/registry\.cn-hangzhou\.aliyuncs\.com\/terata\/gitea-opencode:latest/);
+  assert.match(result.stdout, /container:\n      image: registry\.cn-hangzhou\.aliyuncs\.com\/terata\/gitea-opencode:latest/);
   assert.match(result.stdout, /ANTHROPIC_API_KEY: \$\{\{ secrets\.ANTHROPIC_API_KEY \}\}/);
   assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
   assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/custom"/);
@@ -87,16 +87,16 @@ test("shell installer rejects invalid model format", async () => {
   assert.match(result.stderr, /provider\/model format/);
 });
 
-test("shell installer renders custom action image", async () => {
+test("shell installer renders custom container image", async () => {
   const cwd = await gitTempRepo();
-  const result = spawnSync("sh", [installer, "--dry-run", "--yes", "--action-image", "registry.example.com/team/opencode:test"], {
+  const result = spawnSync("sh", [installer, "--dry-run", "--yes", "--container-image", "registry.example.com/team/opencode:test"], {
     cwd,
     encoding: "utf8",
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /uses: docker:\/\/registry\.example\.com\/team\/opencode:test/);
-  assert.match(result.stderr, /Action image: registry\.example\.com\/team\/opencode:test/);
+  assert.match(result.stdout, /container:\n      image: registry\.example\.com\/team\/opencode:test/);
+  assert.match(result.stderr, /Container image: registry\.example\.com\/team\/opencode:test/);
 });
 
 async function gitTempRepo() {
