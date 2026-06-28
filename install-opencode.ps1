@@ -37,7 +37,11 @@ if (-not (Test-GitRepository)) {
   throw $S.InsideGit
 }
 
-$Template = Join-Path $PSScriptRoot "templates/opencode.yml"
+$ScriptRoot = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($ScriptRoot)) {
+  $ScriptRoot = "."
+}
+$Template = Join-Path $ScriptRoot "templates/opencode.yml"
 $Destination = Join-Path ".gitea" "workflows/opencode.yml"
 
 if ((Test-Path $Destination) -and -not $Force -and -not $DryRun) {
