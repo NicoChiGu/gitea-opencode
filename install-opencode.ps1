@@ -24,7 +24,7 @@ if ([string]::IsNullOrWhiteSpace($TemplateUrl)) {
   $TemplateUrl = "https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/templates/opencode.yml"
 }
 
-$JsonBase64 = "eyJJbnNpZGVHaXQiOiLmraTlronoo4XnqIvluo/lv4XpobvlnKggR2l0IOS7k+W6k+WGhei/kOihjOOAgiIsIkV4aXN0c05vbkludGVyYWN0aXZlIjoiezB9IOW3suWtmOWcqOOAguWcqOmdnuS6pOS6kuaooeW8j+S4i++8jOivt+S9v+eUqCAtRm9yY2Ug5Y+C5pWw6L+b6KGM6KaG55uW44CCIiwiRGV0ZWN0RXhpc3RzIjoi5qOA5rWL5YiwIHswfSDlt7LlrZjlnKjvvIzmmK/lkKbopobnm5blroPvvJ9beS9OXSIsIkNvbmZpcm1lZE92ZXJ3cml0ZSI6IuW3suehruiupOimhuebluOAgiIsIkNhbmNlbGVkIjoi5pON5L2c5bey5Y+W5raI44CCIiwiU2VsZWN0TW9kZWwiOiLor7fpgInmi6kgT3BlbkNvZGUg5qih5Z6L77yaIiwiTW9kZWxSZWMiOiIgIDEpIEFudGhyb3BpYyBDbGF1ZGUgU29ubmV0IDQuNiAo5o6o6I2QKSAgICAgICAgW3swfV0iLCJNb2RlbFBpY2tsZSI6IiAgNSkgT3BlbkNvZGUgWmVuIEJpZyBQaWNrbGUgKOWFjei0uSkgICAgICAgICAgICBbb3BlbmNvZGUvYmlnLXBpY2tsZV0iLCJNb2RlbE1pbmltYXhGcmVlIjoiICA2KSBPcGVuQ29kZSBaZW4gTWluaU1heCBNMi41IEZyZWUgKOWFjei0uSkgICAgIFtvcGVuY29kZS9taW5pbWF4LW0yLjUtZnJlZV0iLCJNb2RlbE5lbW90cm9uRnJlZSI6IiAgNykgT3BlbkNvZGUgWmVuIE5lbW90cm9uIDMgU3VwZXIgRnJlZSAo5YWN6LS5KSBbb3BlbmNvZGUvbmVtb3Ryb24tMy1zdXBlci1mcmVlXSIsIk1vZGVsTWltb0ZyZWUiOiIgIDgpIE9wZW5Db2RlIFplbiBNaU1vIFYyLjUgUHJvIEZyZWUgKOWFjei0uSkgICAgW29wZW5jb2RlL21pbW8tdjIuNS1wcm8tZnJlZV0iLCJNb2RlbE1hbnVhbCI6IiAxNSkg5omL5Yqo6L6T5YWlIOacjeWKoeWVhi/mqKHlnosiLCJJbnB1dENoZWNrb3V0Ijoi6K+36L6T5YWlIENoZWNrb3V0IEFjdGlvbiBb6buY6K6kOiB7MH1dIiwiQ2hvaWNlIjoi6K+36YCJ5oupIFsxXSIsIklucHV0TW9kZWwiOiLor7fovpPlhaXmqKHlnosgKOagvOW8j+S4uiDmnI3liqHllYYv5qih5Z6LKSIsIkludmFsaWRDaG9pY2UiOiLml6DmlYjnmoTpgInmi6k6IHswfSIsIkludmFsaWRNb2RlbEZvcm1hdCI6IuaooeWei+agvOW8j+W/hemhu+S4uiAn5pyN5Yqh5ZWGL+aooeWeiyfvvIzlvZPliY3ovpPlhaXkuLrvvJp7MH0iLCJVbmtub3duUHJvdmlkZXIiOiLmnKrnn6XnmoTmnI3liqHllYYgJ3swfSfjgILor7fph43mlrDov5DooYzlubbkvb/nlKggLUFwaUtleVNlY3JldCA8U0VDUkVUX05BTUU+IOWPguaVsOOAgiIsIklucHV0U2VjcmV0Ijoi6K+36L6T5YWl5pyN5Yqh5ZWGICd7MH0nIOeahCBHaXRlYSBBY3Rpb25zIOWvhumSpeWQjeensCIsIkludmFsaWRTZWNyZXQiOiLml6DmlYjnmoTlr4bpkqXlkI3np7AgJ3swfSfjgILku4XlhYHorrjkvb/nlKjlrZfmr43jgIHmlbDlrZflkozkuIvliJLnur/vvIzkuJTkuI3og73ku6XmlbDlrZflvIDlpLTvvIzkuZ/kuI3og73ku6UgR0lUSFVCXyDmiJYgR0lURUFfIOW8gOWktOOAgiIsIldvcmtmbG93Q29uZmlndXJlZCI6Ik9wZW5Db2RlIOW3peS9nOa1gemFjee9ruWujOaIkOOAgiIsIlJ1bm5lckxhYmVsIjoiUnVubmVyIOagh+etvjogezB9IiwiQWN0aW9uSW1hZ2UiOiJBY3Rpb24g6ZWc5YOPOiB7MH0iLCJTZWxlY3RlZE1vZGVsIjoi5bey6YCJ5qih5Z6LOiB7MH0iLCJBZGRTZWNyZXRUaXAiOiLor7flnKggR2l0ZWEgQWN0aW9ucyDkuK3kuLrmiYDpgInmnI3liqHllYbmt7vliqDku6XkuIvlr4bpkqU6IiwiU2VjcmV0Rm9ybWF0IjoiICB7MH09POaCqOeahCBBUEkg5a+G6ZKlPiIsIlRva2VuT3ZlcnJpZGUiOiLnlKjkuo4gR2l0ZWEg5YaZ5YWl55qE5Y+v6YCJIFRva2VuIOimhuebljoiLCJUb2tlbkZvcm1hdCI6IiAgT1BFTkNPREVfR0lURUFfVE9LRU49PEdpdGVhIOS4quS6uuiuv+mXruS7pOeJjD4iLCJXcm90ZURlc3RpbmF0aW9uIjoi5bey5YaZ5YWlIHswfSIsIk5vQ2hhbmdlcyI6IuayoeacieimgeaPkOS6pOeahOW3peS9nOa1geabtOaUueOAgiIsIkRldGFjaGVkSGVhZCI6IuaXoOazleS7juWIhuemu+eahCBIRUFEIOWIhuaUr+i/m+ihjOaOqOmAgeOAguivt+mHjeaWsOi/kOihjOW5tuS9v+eUqCAtTm9QdXNoIOWPguaVsO+8jOaIluetvuWHuuWIsOS4gOS4quWIhuaUr+OAgiJ9"
+$JsonBase64 = "eyJJbnNpZGVHaXQiOiLmraTlronoo4XnqIvluo/lv4XpobvlnKggR2l0IOS7k+W6k+WGhei/kOihjOOAgiIsIkV4aXN0c05vbkludGVyYWN0aXZlIjoiezB9IOW3suWtmOWcqOOAguWcqOmdnuS6pOS6kuaooeW8j+S4i++8jOivt+S9v+eUqCAtRm9yY2Ug5Y+C5pWw6L+b6KGM6KaG55uW44CCIiwiRGV0ZWN0RXhpc3RzIjoi5qOA5rWL5YiwIHswfSDlt7LlrZjlnKjvvIzmmK/lkKbopobnm5blroPvvJ9beS9OXSIsIkNvbmZpcm1lZE92ZXJ3cml0ZSI6IuW3suehruiupOimhuebluOAgiIsIkNhbmNlbGVkIjoi5pON5L2c5bey5Y+W5raI44CCIiwiU2VsZWN0TW9kZWwiOiLor7fpgInmi6kgT3BlbkNvZGUg5qih5Z6L77yaIiwiTW9kZWxSZWMiOiIgIDEpIEFudGhyb3BpYyBDbGF1ZGUgU29ubmV0IDQuNiAo5o6o6I2QKSAgICAgICAgW3swfV0iLCJNb2RlbFBpY2tsZSI6IiAgNSkgT3BlbkNvZGUgWmVuIEJpZyBQaWNrbGUgKOWFjei0uSkgICAgICAgICAgICBbb3BlbmNvZGUvYmlnLXBpY2tsZV0iLCJNb2RlbERlZXBzZWVrRnJlZSI6IiAgNikgT3BlbkNvZGUgWmVuIERlZXBTZWVrIFY0IEZsYXNoIEZyZWUgKOWFjei0uSlbb3BlbmNvZGUvZGVlcHNlZWstdjQtZmxhc2gtZnJlZV0iLCJNb2RlbE1pbW9GcmVlIjoiICA3KSBPcGVuQ29kZSBaZW4gTWlNbyBWMi41IEZyZWUgKOWFjei0uSkgICAgICAgIFtvcGVuY29kZS9taW5pbWF4LW0yLjUtZnJlZV0iLCJNb2RlbE5vcnRoRnJlZSI6IiAgOCkgT3BlbkNvZGUgWmVuIE5vcnRoIE1pbmkgQ29kZSBGcmVlICjlhY3otLkpICBbb3BlbmNvZGUvbm9ydGgtbWluaS1jb2RlLWZyZWVdIiwiTW9kZWxOZW1vdHJvbkZyZWUiOiIgIDkpIE9wZW5Db2RlIFplbiBOZW1vdHJvbiAzIFVsdHJhIEZyZWUgKOWFjei0uSkgW29wZW5jb2RlL25lbW90cm9uLTMtdWx0cmEtZnJlZV0iLCJNb2RlbE1hbnVhbCI6IiAxNikg5omL5Yqo6L6T5YWlIOacjeWKoeWVhi/mqKHlnosiLCJJbnB1dENoZWNrb3V0Ijoi6K+36L6T5YWlIENoZWNrb3V0IEFjdGlvbiBb6buY6K6kOiB7MH1dIiwiQ2hvaWNlIjoi6K+36YCJ5oupIFsxXSIsIklucHV0TW9kZWwiOiLor7fovpPlhaXmqKHlnosgKOagvOW8j+S4uiDmnI3liqHllYYv5qih5Z6LKSIsIkludmFsaWRDaG9pY2UiOiLml6DmlYjnmoTpgInmi6k6IHswfSIsIkludmFsaWRNb2RlbEZvcm1hdCI6IuaooeWei+agvOW8j+W/hemhu+S4uiAn5pyN5Yqh5ZWGL+aooeWeiyfvvIzlvZPliY3ovpPlhaXkuLrvvJp7MH0iLCJVbmtub3duUHJvdmlkZXIiOiLmnKrnn6XnmoTmnI3liqHllYYgJ3swfSfjgILor7fph43mlrDov5DooYzlubbkvb/nlKggLUFwaUtleVNlY3JldCA8U0VDUkVUX05BTUU+IOWPguaVsOOAgiIsIklucHV0U2VjcmV0Ijoi6K+36L6T5YWl5pyN5Yqh5ZWGICd7MH0nIOeahCBHaXRlYSBBY3Rpb25zIOWvhumSpeWQjeensCIsIkludmFsaWRTZWNyZXQiOiLml6DmlYjnmoTlr4bpkqXlkI3np7AgJ3swfSfjgILku4XlhYHorrjkvb/nlKjlrZfmr43jgIHmlbDlrZflkozkuIvliJLnur/vvIzkuJTkuI3og73ku6XmlbDlrZflvIDlpLTvvIzkuZ/kuI3og73ku6UgR0lUSFVCXyDmiJYgR0lURUFfIOW8gOWktOOAgiIsIldvcmtmbG93Q29uZmlndXJlZCI6Ik9wZW5Db2RlIOW3peS9nOa1gemFjee9ruWujOaIkOOAgiIsIlJ1bm5lckxhYmVsIjoiUnVubmVyIOagh+etvjogezB9IiwiQWN0aW9uSW1hZ2UiOiJBY3Rpb24g6ZWc5YOPOiB7MH0iLCJTZWxlY3RlZE1vZGVsIjoi5bey6YCJ5qih5Z6LOiB7MH0iLCJBZGRTZWNyZXRUaXAiOiLor7flnKggR2l0ZWEgQWN0aW9ucyDkuK3kuLrmiYDpgInmnI3liqHllYbmt7vliqDku6XkuIvlr4bpkqU6IiwiU2VjcmV0Rm9ybWF0IjoiICB7MH09POaCqOeahCBBUEkg5a+G6ZKlPiIsIlRva2VuT3ZlcnJpZGUiOiLnlKjkuo4gR2l0ZWEg5YaZ5YWl55qE5Y+v6YCJIFRva2VuIOimhuebljoiLCJUb2tlbkZvcm1hdCI6IiAgT1BFTkNPREVfR0lURUFfVE9LRU49PEdpdGVhIOS4quS6uuiuv+mXruS7pOeJjD4iLCJXcm90ZURlc3RpbmF0aW9uIjoi5bey5YaZ5YWlIHswfSIsIk5vQ2hhbmdlcyI6IuayoeacieimgeaPkOS6pOeahOW3peS9nOa1geabtOaUueOAgiIsIkRldGFjaGVkSGVhZCI6IuaXoOazleS7juWIhuemu+eahCBIRUFEIOWIhuaUr+i/m+ihjOaOqOmAgeOAguivt+mHjeaWsOi/kOihjOW5tuS9v+eUqCAtTm9QdXNoIOWPguaVsO+8jOaIluetvuWHuuWIsOS4gOS4quWIhuaUr+OAgiJ9"
 $JsonBytes = [System.Convert]::FromBase64String($JsonBase64)
 $JsonText = [System.Text.Encoding]::UTF8.GetString($JsonBytes)
 $S = ConvertFrom-Json $JsonText
@@ -60,6 +60,70 @@ if ((Test-Path $Destination) -and -not $Force -and -not $DryRun) {
   }
 }
 
+$DefaultModels = @(
+  @{ Name = "Anthropic Claude Sonnet 4.6 (推荐)"; Id = "anthropic/claude-sonnet-4-6" }
+  @{ Name = "OpenAI GPT-5 Codex"; Id = "openai/gpt-5-codex" }
+  @{ Name = "OpenAI ChatGPT latest"; Id = "openai/gpt-5-chat-latest" }
+  @{ Name = "OpenCode Zen Claude Sonnet 4"; Id = "opencode/claude-sonnet-4" }
+  @{ Name = "OpenCode Zen Big Pickle (免费)"; Id = "opencode/big-pickle" }
+  @{ Name = "OpenCode Zen DeepSeek V4 Flash Free (免费)"; Id = "opencode/deepseek-v4-flash-free" }
+  @{ Name = "OpenCode Zen MiMo V2.5 Free (免费)"; Id = "opencode/mimo-v2.5-free" }
+  @{ Name = "OpenCode Zen North Mini Code Free (免费)"; Id = "opencode/north-mini-code-free" }
+  @{ Name = "OpenCode Zen Nemotron 3 Ultra Free (免费)"; Id = "opencode/nemotron-3-ultra-free" }
+  @{ Name = "DeepSeek Reasoner"; Id = "deepseek/deepseek-reasoner" }
+  @{ Name = "Moonshot Kimi K2 Thinking"; Id = "moonshotai/kimi-k2-thinking" }
+  @{ Name = "MiniMax M2.5"; Id = "minimax/MiniMax-M2.5" }
+  @{ Name = "Xiaomi MiMo V2.5 Pro China"; Id = "xiaomi-token-plan-cn/mimo-v2.5-pro" }
+  @{ Name = "Xiaomi MiMo V2.5 Pro Singapore"; Id = "xiaomi-token-plan-sgp/mimo-v2.5-pro" }
+  @{ Name = "Xiaomi MiMo V2.5 Pro Amsterdam"; Id = "xiaomi-token-plan-ams/mimo-v2.5-pro" }
+)
+
+$ActiveModels = $DefaultModels
+try {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $Data = Invoke-RestMethod -Uri "https://models.dev/api.json" -TimeoutSec 3 -ErrorAction Stop
+  if ($Data -and $Data.opencode -and $Data.opencode.models) {
+    $OpencodeModels = $Data.opencode.models
+    $ZenModels = @()
+    # Recommended & Standard Zen models
+    foreach ($mId in @("claude-sonnet-4-6", "claude-sonnet-4")) {
+      if ($OpencodeModels.$mId) {
+        $ZenModels += @{ Name = "OpenCode Zen " + $OpencodeModels.$mId.name; Id = "opencode/$mId" }
+      }
+    }
+    # Free Zen models
+    foreach ($mId in $OpencodeModels.PSObject.Properties.Name) {
+      if ($mId -eq "claude-sonnet-4-6" -or $mId -eq "claude-sonnet-4") { continue }
+      $m = $OpencodeModels.$mId
+      $isFree = $mId.EndsWith("-free") -or $mId -eq "big-pickle" -or ($m.cost -and $m.cost.input -eq 0)
+      if ($isFree) {
+        $displayName = $m.name
+        if (-not $displayName.EndsWith("Free") -and -not $displayName.Contains("免费")) {
+          $displayName += " (免费)"
+        }
+        $ZenModels += @{ Name = "OpenCode Zen " + $displayName; Id = "opencode/$mId" }
+      }
+    }
+    
+    $FetchedModels = @()
+    $FetchedModels += @{ Name = "Anthropic Claude Sonnet 4.6 (推荐)"; Id = "anthropic/claude-sonnet-4-6" }
+    $FetchedModels += @{ Name = "OpenAI GPT-5 Codex"; Id = "openai/gpt-5-codex" }
+    $FetchedModels += @{ Name = "OpenAI ChatGPT latest"; Id = "openai/gpt-5-chat-latest" }
+    $FetchedModels += $ZenModels
+    $FetchedModels += @{ Name = "DeepSeek Reasoner"; Id = "deepseek/deepseek-reasoner" }
+    $FetchedModels += @{ Name = "Moonshot Kimi K2 Thinking"; Id = "moonshotai/kimi-k2-thinking" }
+    $FetchedModels += @{ Name = "MiniMax M2.5"; Id = "minimax/MiniMax-M2.5" }
+    $FetchedModels += @{ Name = "Xiaomi MiMo V2.5 Pro China"; Id = "xiaomi-token-plan-cn/mimo-v2.5-pro" }
+    $FetchedModels += @{ Name = "Xiaomi MiMo V2.5 Pro Singapore"; Id = "xiaomi-token-plan-sgp/mimo-v2.5-pro" }
+    $FetchedModels += @{ Name = "Xiaomi MiMo V2.5 Pro Amsterdam"; Id = "xiaomi-token-plan-ams/mimo-v2.5-pro" }
+    if ($FetchedModels.Count -gt 0) {
+      $ActiveModels = $FetchedModels
+    }
+  }
+} catch {
+  # Fallback to $DefaultModels
+}
+
 function Select-OpenCodeModel {
   if (-not [string]::IsNullOrWhiteSpace($Model)) {
     return $Model
@@ -71,41 +135,34 @@ function Select-OpenCodeModel {
 
   Write-Host ""
   Write-Host $S.SelectModel
-  Write-Host ($S.ModelRec -f $DefaultModel)
-  Write-Host "  2) OpenAI GPT-5 Codex                        [openai/gpt-5-codex]"
-  Write-Host "  3) OpenAI ChatGPT latest                     [openai/gpt-5-chat-latest]"
-  Write-Host "  4) OpenCode Zen Claude Sonnet 4              [opencode/claude-sonnet-4]"
-  Write-Host $S.ModelPickle
-  Write-Host $S.ModelMinimaxFree
-  Write-Host $S.ModelNemotronFree
-  Write-Host $S.ModelMimoFree
-  Write-Host "  9) DeepSeek Reasoner                         [deepseek/deepseek-reasoner]"
-  Write-Host " 10) Moonshot Kimi K2 Thinking                 [moonshotai/kimi-k2-thinking]"
-  Write-Host " 11) MiniMax M2.5                              [minimax/MiniMax-M2.5]"
-  Write-Host " 12) Xiaomi MiMo V2.5 Pro China                [xiaomi-token-plan-cn/mimo-v2.5-pro]"
-  Write-Host " 13) Xiaomi MiMo V2.5 Pro Singapore            [xiaomi-token-plan-sgp/mimo-v2.5-pro]"
-  Write-Host " 14) Xiaomi MiMo V2.5 Pro Amsterdam            [xiaomi-token-plan-ams/mimo-v2.5-pro]"
-  Write-Host $S.ModelManual
-  $Choice = Read-Host $S.Choice
+  
+  $i = 1
+  foreach ($modelOption in $ActiveModels) {
+    $numStr = "{0,3})" -f $i
+    $nameStr = "{0,-44}" -f $modelOption.Name
+    Write-Host "$numStr $nameStr [$($modelOption.Id)]"
+    $i++
+  }
+  $ManualChoiceNum = $ActiveModels.Count + 1
+  Write-Host ("{0,3}) {1}" -f $ManualChoiceNum, $S.ModelManual)
 
-  switch ($Choice) {
-    "" { $Selected = $DefaultModel }
-    "1" { $Selected = $DefaultModel }
-    "2" { $Selected = "openai/gpt-5-codex" }
-    "3" { $Selected = "openai/gpt-5-chat-latest" }
-    "4" { $Selected = "opencode/claude-sonnet-4" }
-    "5" { $Selected = "opencode/big-pickle" }
-    "6" { $Selected = "opencode/minimax-m2.5-free" }
-    "7" { $Selected = "opencode/nemotron-3-super-free" }
-    "8" { $Selected = "opencode/mimo-v2.5-pro-free" }
-    "9" { $Selected = "deepseek/deepseek-reasoner" }
-    "10" { $Selected = "moonshotai/kimi-k2-thinking" }
-    "11" { $Selected = "minimax/MiniMax-M2.5" }
-    "12" { $Selected = "xiaomi-token-plan-cn/mimo-v2.5-pro" }
-    "13" { $Selected = "xiaomi-token-plan-sgp/mimo-v2.5-pro" }
-    "14" { $Selected = "xiaomi-token-plan-ams/mimo-v2.5-pro" }
-    "15" { $Selected = Read-Host $S.InputModel }
-    default { throw ($S.InvalidChoice -f $Choice) }
+  $Choice = Read-Host $S.Choice
+  $Selected = ""
+  if ([string]::IsNullOrWhiteSpace($Choice)) {
+    $Selected = $DefaultModel
+  } elseif ($Choice -eq $ManualChoiceNum) {
+    $Selected = Read-Host $S.InputModel
+  } else {
+    $ChoiceIdx = -1
+    if ($Choice -match "^\d+$") {
+      $ChoiceIdx = [int]$Choice
+    }
+    $Idx = $ChoiceIdx - 1
+    if ($Idx -ge 0 -and $Idx -lt $ActiveModels.Count) {
+      $Selected = $ActiveModels[$Idx].Id
+    } else {
+      throw ($S.InvalidChoice -f $Choice)
+    }
   }
 
   if ($Selected -notmatch "^[^/]+/.+$") {

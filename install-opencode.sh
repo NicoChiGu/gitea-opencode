@@ -152,11 +152,129 @@ load_template() {
   exit 1
 }
 
+fetch_dynamic_models() {
+  DEFAULT_MODELS_STR="Anthropic Claude Sonnet 4.6 (推荐);anthropic/claude-sonnet-4-6
+OpenAI GPT-5 Codex;openai/gpt-5-codex
+OpenAI ChatGPT latest;openai/gpt-5-chat-latest
+OpenCode Zen Claude Sonnet 4;opencode/claude-sonnet-4
+OpenCode Zen Big Pickle (免费);opencode/big-pickle
+OpenCode Zen DeepSeek V4 Flash Free (免费);opencode/deepseek-v4-flash-free
+OpenCode Zen MiMo V2.5 Free (免费);opencode/mimo-v2.5-free
+OpenCode Zen North Mini Code Free (免费);opencode/north-mini-code-free
+OpenCode Zen Nemotron 3 Ultra Free (免费);opencode/nemotron-3-ultra-free
+DeepSeek Reasoner;deepseek/deepseek-reasoner
+Moonshot Kimi K2 Thinking;moonshotai/kimi-k2-thinking
+MiniMax M2.5;minimax/MiniMax-M2.5
+Xiaomi MiMo V2.5 Pro China;xiaomi-token-plan-cn/mimo-v2.5-pro
+Xiaomi MiMo V2.5 Pro Singapore;xiaomi-token-plan-sgp/mimo-v2.5-pro
+Xiaomi MiMo V2.5 Pro Amsterdam;xiaomi-token-plan-ams/mimo-v2.5-pro"
+
+  ACTIVE_MODELS_STR="$DEFAULT_MODELS_STR"
+
+  API_URL="https://models.dev/api.json"
+  JSON_DATA=""
+  if command -v curl >/dev/null 2>&1; then
+    JSON_DATA=$(curl -fsSL --connect-timeout 3 "$API_URL" 2>/dev/null) || JSON_DATA=""
+  elif command -v wget >/dev/null 2>&1; then
+    JSON_DATA=$(wget -qO- --timeout=3 "$API_URL" 2>/dev/null) || JSON_DATA=""
+  fi
+
+  if [ -n "$JSON_DATA" ]; then
+    if command -v node >/dev/null 2>&1; then
+      PARSED=$(node -e '
+        try {
+          const data = JSON.parse(process.argv[1]);
+          const models = data.opencode.models;
+          const zenModels = [];
+          for (const mId of ["claude-sonnet-4-6", "claude-sonnet-4"]) {
+            if (models[mId]) {
+              zenModels.push(`OpenCode Zen ${models[mId].name};opencode/${mId}`);
+            }
+          }
+          for (const mId of Object.keys(models)) {
+            if (mId === "claude-sonnet-4-6" || mId === "claude-sonnet-4") continue;
+            const m = models[mId];
+            const isFree = mId.endsWith("-free") || mId === "big-pickle" || (m.cost && m.cost.input === 0);
+            if (isFree) {
+              let name = m.name;
+              if (!name.endsWith("Free") && !name.includes("免费")) name += " (免费)";
+              zenModels.push(`OpenCode Zen ${name};opencode/${mId}`);
+            }
+          }
+          const output = [
+            "Anthropic Claude Sonnet 4.6 (推荐);anthropic/claude-sonnet-4-6",
+            "OpenAI GPT-5 Codex;openai/gpt-5-codex",
+            "OpenAI ChatGPT latest;openai/gpt-5-chat-latest",
+            ...zenModels,
+            "DeepSeek Reasoner;deepseek/deepseek-reasoner",
+            "Moonshot Kimi K2 Thinking;moonshotai/kimi-k2-thinking",
+            "MiniMax M2.5;minimax/MiniMax-M2.5",
+            "Xiaomi MiMo V2.5 Pro China;xiaomi-token-plan-cn/mimo-v2.5-pro",
+            "Xiaomi MiMo V2.5 Pro Singapore;xiaomi-token-plan-sgp/mimo-v2.5-pro",
+            "Xiaomi MiMo V2.5 Pro Amsterdam;xiaomi-token-plan-ams/mimo-v2.5-pro"
+          ];
+          console.log(output.join("\n"));
+        } catch (e) {}
+      ' "$JSON_DATA" 2>/dev/null) || PARSED=""
+      if [ -n "$PARSED" ]; then
+        ACTIVE_MODELS_STR="$PARSED"
+        return
+      fi
+    fi
+
+    if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+      PYTHON_CMD="python3"
+      command -v python3 >/dev/null 2>&1 || PYTHON_CMD="python"
+      PARSED=$($PYTHON_CMD -c '
+import sys, json
+try:
+    data = json.loads(sys.argv[1])
+    models = data["opencode"]["models"]
+    zen_models = []
+    for mId in ["claude-sonnet-4-6", "claude-sonnet-4"]:
+        if mId in models:
+            zen_models.append(f"OpenCode Zen {models[mId][\"name\"]};opencode/{mId}")
+    for mId in models:
+        if mId in ["claude-sonnet-4-6", "claude-sonnet-4"]:
+            continue
+        m = models[mId]
+        is_free = mId.endswith("-free") or mId == "big-pickle" or (m.get("cost") and m.get("cost").get("input") == 0)
+        if is_free:
+            name = m["name"]
+            if not name.endswith("Free") and "免费" not in name:
+                name += " (免费)"
+            zen_models.append(f"OpenCode Zen {name};opencode/{mId}")
+    output = [
+        "Anthropic Claude Sonnet 4.6 (推荐);anthropic/claude-sonnet-4-6",
+        "OpenAI GPT-5 Codex;openai/gpt-5-codex",
+        "OpenAI ChatGPT latest;openai/gpt-5-chat-latest"
+    ] + zen_models + [
+        "DeepSeek Reasoner;deepseek/deepseek-reasoner",
+        "Moonshot Kimi K2 Thinking;moonshotai/kimi-k2-thinking",
+        "MiniMax M2.5;minimax/MiniMax-M2.5",
+        "Xiaomi MiMo V2.5 Pro China;xiaomi-token-plan-cn/mimo-v2.5-pro",
+        "Xiaomi MiMo V2.5 Pro Singapore;xiaomi-token-plan-sgp/mimo-v2.5-pro",
+        "Xiaomi MiMo V2.5 Pro Amsterdam;xiaomi-token-plan-ams/mimo-v2.5-pro"
+    ]
+    print("\n".join(output))
+except Exception as e:
+    pass
+' "$JSON_DATA" 2>/dev/null) || PARSED=""
+      if [ -n "$PARSED" ]; then
+        ACTIVE_MODELS_STR="$PARSED"
+        return
+      fi
+    fi
+  fi
+}
+
 select_model() {
   if [ "$MODEL_SET" -eq 1 ]; then
     validate_model
     return
   fi
+
+  fetch_dynamic_models
 
   if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -t 0 ] || [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
     MODEL="$DEFAULT_MODEL"
@@ -166,47 +284,59 @@ select_model() {
   {
     echo
     echo "请选择 OpenCode 模型："
-    echo "  1) Anthropic Claude Sonnet 4.6 (推荐)        [$DEFAULT_MODEL]"
-    echo "  2) OpenAI GPT-5 Codex                        [openai/gpt-5-codex]"
-    echo "  3) OpenAI ChatGPT latest                     [openai/gpt-5-chat-latest]"
-    echo "  4) OpenCode Zen Claude Sonnet 4              [opencode/claude-sonnet-4]"
-    echo "  5) OpenCode Zen Big Pickle (免费)            [opencode/big-pickle]"
-    echo "  6) OpenCode Zen MiniMax M2.5 Free (免费)     [opencode/minimax-m2.5-free]"
-    echo "  7) OpenCode Zen Nemotron 3 Super Free (免费) [opencode/nemotron-3-super-free]"
-    echo "  8) OpenCode Zen MiMo V2.5 Pro Free (免费)    [opencode/mimo-v2.5-pro-free]"
-    echo "  9) DeepSeek Reasoner                         [deepseek/deepseek-reasoner]"
-    echo " 10) Moonshot Kimi K2 Thinking                 [moonshotai/kimi-k2-thinking]"
-    echo " 11) MiniMax M2.5                              [minimax/MiniMax-M2.5]"
-    echo " 12) Xiaomi MiMo V2.5 Pro China                [xiaomi-token-plan-cn/mimo-v2.5-pro]"
-    echo " 13) Xiaomi MiMo V2.5 Pro Singapore            [xiaomi-token-plan-sgp/mimo-v2.5-pro]"
-    echo " 14) Xiaomi MiMo V2.5 Pro Amsterdam            [xiaomi-token-plan-ams/mimo-v2.5-pro]"
-    echo " 15) 手动输入 服务商/模型"
+    i=1
+    old_ifs="$IFS"
+    IFS='
+'
+    for line in $ACTIVE_MODELS_STR; do
+      [ -n "$line" ] || continue
+      name=$(echo "$line" | cut -d';' -f1)
+      id=$(echo "$line" | cut -d';' -f2)
+      printf " %2d) %-44s [%s]\n" "$i" "$name" "$id"
+      i=$((i + 1))
+    done
+    manual_num=$i
+    printf " %2d) 手动输入 服务商/模型\n" "$manual_num"
     printf "请选择 [1]: "
+    IFS="$old_ifs"
   } > /dev/tty
 
   IFS= read -r choice < /dev/tty || choice=""
   case "$choice" in
-    ""|1) MODEL="$DEFAULT_MODEL" ;;
-    2) MODEL="openai/gpt-5-codex" ;;
-    3) MODEL="openai/gpt-5-chat-latest" ;;
-    4) MODEL="opencode/claude-sonnet-4" ;;
-    5) MODEL="opencode/big-pickle" ;;
-    6) MODEL="opencode/minimax-m2.5-free" ;;
-    7) MODEL="opencode/nemotron-3-super-free" ;;
-    8) MODEL="opencode/mimo-v2.5-pro-free" ;;
-    9) MODEL="deepseek/deepseek-reasoner" ;;
-    10) MODEL="moonshotai/kimi-k2-thinking" ;;
-    11) MODEL="minimax/MiniMax-M2.5" ;;
-    12) MODEL="xiaomi-token-plan-cn/mimo-v2.5-pro" ;;
-    13) MODEL="xiaomi-token-plan-sgp/mimo-v2.5-pro" ;;
-    14) MODEL="xiaomi-token-plan-ams/mimo-v2.5-pro" ;;
-    15)
-      printf "请输入模型 (格式为 服务商/模型): " > /dev/tty
-      IFS= read -r MODEL < /dev/tty || MODEL=""
+    ''|*[!0-9]*)
+      if [ -z "$choice" ]; then
+        MODEL="$DEFAULT_MODEL"
+      else
+        echo "无效的选择: $choice" >&2
+        exit 2
+      fi
       ;;
     *)
-      echo "无效的选择: $choice" >&2
-      exit 2
+      if [ "$choice" -eq "$manual_num" ]; then
+        printf "请输入模型 (格式为 服务商/模型): " > /dev/tty
+        IFS= read -r MODEL < /dev/tty || MODEL=""
+      else
+        i=1
+        old_ifs="$IFS"
+        IFS='
+'
+        found_model=""
+        for line in $ACTIVE_MODELS_STR; do
+          [ -n "$line" ] || continue
+          if [ "$i" -eq "$choice" ]; then
+            found_model=$(echo "$line" | cut -d';' -f2)
+            break
+          fi
+          i=$((i + 1))
+        done
+        IFS="$old_ifs"
+        if [ -n "$found_model" ]; then
+          MODEL="$found_model"
+        else
+          echo "无效的选择: $choice" >&2
+          exit 2
+        fi
+      fi
       ;;
   esac
 
