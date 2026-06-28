@@ -21,6 +21,7 @@ test("shell installer dry-run renders configured workflow", async () => {
   assert.match(result.stdout, /ANTHROPIC_API_KEY: \$\{\{ secrets\.ANTHROPIC_API_KEY \}\}/);
   assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
   assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/custom"/);
+  assert.match(result.stdout, /uses: actions\/checkout@v4/);
   assert.match(result.stderr, /ANTHROPIC_API_KEY=<您的 API 密钥>/);
 });
 
@@ -97,6 +98,17 @@ test("shell installer renders custom action image", async () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /uses: docker:\/\/registry\.example\.com\/team\/opencode:test/);
   assert.match(result.stderr, /Action 镜像: registry\.example\.com\/team\/opencode:test/);
+});
+
+test("shell installer renders custom checkout action", async () => {
+  const cwd = await gitTempRepo();
+  const result = spawnSync("sh", [installer, "--dry-run", "--yes", "--checkout-action", "checkout@v4"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /uses: checkout@v4/);
 });
 
 async function gitTempRepo() {

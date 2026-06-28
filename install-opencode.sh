@@ -13,6 +13,7 @@ DRY_RUN=0
 NO_COMMIT=0
 NO_PUSH=0
 NON_INTERACTIVE=0
+CHECKOUT_ACTION="actions/checkout@v4"
 COMMIT_MESSAGE="chore: add gitea opencode workflow"
 TEMPLATE_URL="${OPENCODE_WORKFLOW_TEMPLATE_URL:-https://raw.githubusercontent.com/NicoChiGu/gitea-opencode/main/templates/opencode.yml}"
 
@@ -31,6 +32,8 @@ usage() {
                           --action-image 的已弃用别名
   --model <model>         格式为 "服务商/模型" 的 OpenCode 模型
   --api-key-secret <name> 为所选服务商指定的 Gitea Actions 密钥名称
+  --checkout-action <action>
+                          使用的 checkout action，默认：actions/checkout@v4
   --yes, --non-interactive
                           跳过交互提示并使用默认配置
   --help                  显示此帮助信息
@@ -75,6 +78,11 @@ while [ "$#" -gt 0 ]; do
       API_KEY_SECRET="${2:-}"
       [ -n "$API_KEY_SECRET" ] || { echo "--api-key-secret requires a value" >&2; exit 2; }
       API_KEY_SECRET_SET=1
+      shift 2
+      ;;
+    --checkout-action)
+      CHECKOUT_ACTION="${2:-}"
+      [ -n "$CHECKOUT_ACTION" ] || { echo "--checkout-action requires a value" >&2; exit 2; }
       shift 2
       ;;
     --yes|--non-interactive)
@@ -272,15 +280,31 @@ print_next_steps() {
   } >&2
 }
 
+select_checkout_action() {
+  if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -t 0 ] || [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+    return
+  fi
+
+  echo > /dev/tty
+  printf "请输入 Checkout Action [默认: %s]: " "$CHECKOUT_ACTION" > /dev/tty
+  IFS= read -r choice < /dev/tty || choice=""
+  if [ -n "$choice" ]; then
+    CHECKOUT_ACTION="$choice"
+  fi
+}
+
 render_workflow() {
   select_model
+  select_checkout_action
   select_api_key_secret
   provider_env_line=$(provider_api_key_env_line)
   load_template | sed \
     -e "s#__RUNNER_LABEL__#$RUNNER_LABEL#g" \
     -e "s#__ACTION_IMAGE__#$ACTION_IMAGE#g" \
     -e "s#__PROVIDER_API_KEY_ENV__#$provider_env_line#g" \
-    -e "s#__OPENCODE_MODEL__#$MODEL#g"
+    -e "s#__OPENCODE_MODEL__#$MODEL#g" \
+    -e "s#https://github.com/actions/checkout@v4#$CHECKOUT_ACTION#g" \
+    -e "s#__CHECKOUT_ACTION__#$CHECKOUT_ACTION#g"
 }
 
 if [ "$DRY_RUN" -eq 1 ]; then

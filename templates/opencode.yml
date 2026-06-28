@@ -28,7 +28,7 @@ jobs:
     runs-on: __RUNNER_LABEL__
     steps:
       - name: Checkout repository
-        uses: https://github.com/actions/checkout@v4
+        uses: __CHECKOUT_ACTION__
         with:
           fetch-depth: 0
           persist-credentials: false
