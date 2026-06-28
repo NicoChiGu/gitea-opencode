@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$Force,
   [switch]$DryRun,
   [switch]$NoCommit,
@@ -29,14 +29,25 @@ function Test-GitRepository {
 }
 
 if (-not (Test-GitRepository)) {
-  throw "This installer must be run inside a Git repository."
+  throw "此安装程序必须在 Git 仓库内运行。"
 }
 
 $Template = Join-Path $PSScriptRoot "templates/opencode.yml"
 $Destination = Join-Path ".gitea" "workflows/opencode.yml"
 
 if ((Test-Path $Destination) -and -not $Force -and -not $DryRun) {
-  throw "$Destination already exists. Re-run with -Force to overwrite it."
+  if ($Yes -or $NonInteractive -or [Console]::IsInputRedirected) {
+    throw "$Destination 已存在。在非交互模式下，请使用 -Force 参数进行覆盖。"
+  } else {
+    Write-Host ""
+    $PromptChoice = Read-Host "检测到 $Destination 已存在，是否覆盖它？[y/N]"
+    if ($PromptChoice -match "^[yY](es)?$") {
+      Write-Host "已确认覆盖。"
+    } else {
+      Write-Host "操作已取消。"
+      exit 0
+    }
+  }
 }
 
 function Select-OpenCodeModel {
@@ -49,19 +60,23 @@ function Select-OpenCodeModel {
   }
 
   Write-Host ""
-  Write-Host "Select OpenCode model:"
-  Write-Host "  1) Anthropic Claude Sonnet 4.6 (recommended)  [$DefaultModel]"
-  Write-Host "  2) OpenAI GPT-5 Codex                         [openai/gpt-5-codex]"
-  Write-Host "  3) OpenAI ChatGPT latest                      [openai/gpt-5-chat-latest]"
-  Write-Host "  4) OpenCode Zen Claude Sonnet 4               [opencode/claude-sonnet-4]"
-  Write-Host "  5) Xiaomi MiMo V2.5 Pro China                 [xiaomi-token-plan-cn/mimo-v2.5-pro]"
-  Write-Host "  6) Xiaomi MiMo V2.5 Pro Singapore             [xiaomi-token-plan-sgp/mimo-v2.5-pro]"
-  Write-Host "  7) Xiaomi MiMo V2.5 Pro Amsterdam             [xiaomi-token-plan-ams/mimo-v2.5-pro]"
-  Write-Host "  8) DeepSeek Reasoner                          [deepseek/deepseek-reasoner]"
-  Write-Host "  9) Moonshot Kimi K2 Thinking                  [moonshotai/kimi-k2-thinking]"
-  Write-Host " 10) MiniMax M2.5                               [minimax/MiniMax-M2.5]"
-  Write-Host " 11) Manual provider/model"
-  $Choice = Read-Host "Choice [1]"
+  Write-Host "请选择 OpenCode 模型："
+  Write-Host "  1) Anthropic Claude Sonnet 4.6 (推荐)        [$DefaultModel]"
+  Write-Host "  2) OpenAI GPT-5 Codex                        [openai/gpt-5-codex]"
+  Write-Host "  3) OpenAI ChatGPT latest                     [openai/gpt-5-chat-latest]"
+  Write-Host "  4) OpenCode Zen Claude Sonnet 4              [opencode/claude-sonnet-4]"
+  Write-Host "  5) OpenCode Zen Big Pickle (免费)            [opencode/big-pickle]"
+  Write-Host "  6) OpenCode Zen MiniMax M2.5 Free (免费)     [opencode/minimax-m2.5-free]"
+  Write-Host "  7) OpenCode Zen Nemotron 3 Super Free (免费) [opencode/nemotron-3-super-free]"
+  Write-Host "  8) OpenCode Zen MiMo V2.5 Pro Free (免费)    [opencode/mimo-v2.5-pro-free]"
+  Write-Host "  9) DeepSeek Reasoner                         [deepseek/deepseek-reasoner]"
+  Write-Host " 10) Moonshot Kimi K2 Thinking                 [moonshotai/kimi-k2-thinking]"
+  Write-Host " 11) MiniMax M2.5                              [minimax/MiniMax-M2.5]"
+  Write-Host " 12) Xiaomi MiMo V2.5 Pro China                [xiaomi-token-plan-cn/mimo-v2.5-pro]"
+  Write-Host " 13) Xiaomi MiMo V2.5 Pro Singapore            [xiaomi-token-plan-sgp/mimo-v2.5-pro]"
+  Write-Host " 14) Xiaomi MiMo V2.5 Pro Amsterdam            [xiaomi-token-plan-ams/mimo-v2.5-pro]"
+  Write-Host " 15) 手动输入 服务商/模型"
+  $Choice = Read-Host "请选择 [1]"
 
   switch ($Choice) {
     "" { $Selected = $DefaultModel }
@@ -69,18 +84,22 @@ function Select-OpenCodeModel {
     "2" { $Selected = "openai/gpt-5-codex" }
     "3" { $Selected = "openai/gpt-5-chat-latest" }
     "4" { $Selected = "opencode/claude-sonnet-4" }
-    "5" { $Selected = "xiaomi-token-plan-cn/mimo-v2.5-pro" }
-    "6" { $Selected = "xiaomi-token-plan-sgp/mimo-v2.5-pro" }
-    "7" { $Selected = "xiaomi-token-plan-ams/mimo-v2.5-pro" }
-    "8" { $Selected = "deepseek/deepseek-reasoner" }
-    "9" { $Selected = "moonshotai/kimi-k2-thinking" }
-    "10" { $Selected = "minimax/MiniMax-M2.5" }
-    "11" { $Selected = Read-Host "Enter model (provider/model)" }
-    default { throw "Invalid choice: $Choice" }
+    "5" { $Selected = "opencode/big-pickle" }
+    "6" { $Selected = "opencode/minimax-m2.5-free" }
+    "7" { $Selected = "opencode/nemotron-3-super-free" }
+    "8" { $Selected = "opencode/mimo-v2.5-pro-free" }
+    "9" { $Selected = "deepseek/deepseek-reasoner" }
+    "10" { $Selected = "moonshotai/kimi-k2-thinking" }
+    "11" { $Selected = "minimax/MiniMax-M2.5" }
+    "12" { $Selected = "xiaomi-token-plan-cn/mimo-v2.5-pro" }
+    "13" { $Selected = "xiaomi-token-plan-sgp/mimo-v2.5-pro" }
+    "14" { $Selected = "xiaomi-token-plan-ams/mimo-v2.5-pro" }
+    "15" { $Selected = Read-Host "请输入模型 (格式为 服务商/模型)" }
+    default { throw "无效的选择: $Choice" }
   }
 
   if ($Selected -notmatch "^[^/]+/.+$") {
-    throw "Model must use provider/model format, got: $Selected"
+    throw "模型格式必须为 '服务商/模型'，当前输入为：$Selected"
   }
 
   return $Selected
@@ -89,7 +108,7 @@ function Select-OpenCodeModel {
 $SelectedModel = Select-OpenCodeModel
 
 if ($SelectedModel -notmatch "^[^/]+/.+$") {
-  throw "Model must use provider/model format, got: $SelectedModel"
+  throw "模型格式必须为 '服务商/模型'，当前输入为：$SelectedModel"
 }
 
 function Get-ProviderFromModel([string]$Value) {
@@ -115,29 +134,29 @@ function Get-ApiKeySecretForModel([string]$Value) {
     "xiaomi-token-plan-ams" { return "XIAOMI_API_KEY" }
     default {
       if ($Yes -or $NonInteractive -or [Console]::IsInputRedirected) {
-        throw "Unknown provider '$Provider'. Re-run with -ApiKeySecret <SECRET_NAME>."
+        throw "未知的服务商 '$Provider'。请重新运行并使用 -ApiKeySecret <SECRET_NAME> 参数。"
       }
-      return Read-Host "Enter Gitea Actions secret name for provider '$Provider'"
+      return Read-Host "请输入服务商 '$Provider' 的 Gitea Actions 密钥名称"
     }
   }
 }
 
 function Assert-ValidSecretName([string]$Name) {
   if ([string]::IsNullOrWhiteSpace($Name) -or $Name -notmatch "^[A-Za-z_][A-Za-z0-9_]*$" -or $Name.StartsWith("GITHUB_") -or $Name.StartsWith("GITEA_")) {
-    throw "Invalid secret name '$Name'. Use only letters, numbers, and underscores; do not start with a number, GITHUB_, or GITEA_."
+    throw "无效的密钥名称 '$Name'。仅允许使用字母、数字和下划线，且不能以数字开头，也不能以 GITHUB_ 或 GITEA_ 开头。"
   }
 }
 
 function Write-NextSteps([string]$SelectedModel, [string]$SelectedSecret) {
   [Console]::Error.WriteLine("")
-  [Console]::Error.WriteLine("OpenCode workflow configured.")
-  [Console]::Error.WriteLine("Runner label: $RunnerLabel")
-  [Console]::Error.WriteLine("Action image: $ActionImage")
-  [Console]::Error.WriteLine("Selected model: $SelectedModel")
-  [Console]::Error.WriteLine("Add this Gitea Actions secret for the selected provider:")
-  [Console]::Error.WriteLine("  $SelectedSecret=<your api key>")
-  [Console]::Error.WriteLine("Optional token override for Gitea writes:")
-  [Console]::Error.WriteLine("  OPENCODE_GITEA_TOKEN=<gitea personal access token>")
+  [Console]::Error.WriteLine("OpenCode 工作流配置完成。")
+  [Console]::Error.WriteLine("Runner 标签: $RunnerLabel")
+  [Console]::Error.WriteLine("Action 镜像: $ActionImage")
+  [Console]::Error.WriteLine("已选模型: $SelectedModel")
+  [Console]::Error.WriteLine("请在 Gitea Actions 中为所选服务商添加以下密钥:")
+  [Console]::Error.WriteLine("  $SelectedSecret=<您的 API 密钥>")
+  [Console]::Error.WriteLine("用于 Gitea 写入的可选 Token 覆盖:")
+  [Console]::Error.WriteLine("  OPENCODE_GITEA_TOKEN=<Gitea 个人访问令牌>")
 }
 
 $SelectedApiKeySecret = Get-ApiKeySecretForModel $SelectedModel
@@ -163,7 +182,7 @@ if ($DryRun) {
 
 New-Item -ItemType Directory -Force -Path (Split-Path $Destination) | Out-Null
 Set-Content -Path $Destination -Value $Workflow -NoNewline
-Write-Output "Wrote $Destination"
+Write-Output "已写入 $Destination"
 
 if ($NoCommit) {
   Write-NextSteps $SelectedModel $SelectedApiKeySecret
@@ -175,7 +194,7 @@ git diff --cached --quiet -- $Destination
 if ($LASTEXITCODE -ne 0) {
   git commit -m $CommitMessage
 } else {
-  Write-Output "No workflow changes to commit."
+  Write-Output "没有要提交的工作流更改。"
 }
 
 if ($NoPush) {
@@ -185,7 +204,7 @@ if ($NoPush) {
 
 $Branch = (git rev-parse --abbrev-ref HEAD).Trim()
 if ($Branch -eq "HEAD") {
-  throw "Cannot push from a detached HEAD. Re-run with -NoPush or checkout a branch."
+  throw "无法从分离的 HEAD 分支进行推送。请重新运行并使用 -NoPush 参数，或签出到一个分支。"
 }
 
 git push origin $Branch

@@ -21,7 +21,7 @@ test("shell installer dry-run renders configured workflow", async () => {
   assert.match(result.stdout, /ANTHROPIC_API_KEY: \$\{\{ secrets\.ANTHROPIC_API_KEY \}\}/);
   assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
   assert.match(result.stdout, /OPENCODE_MODEL: "anthropic\/custom"/);
-  assert.match(result.stderr, /ANTHROPIC_API_KEY=<your api key>/);
+  assert.match(result.stderr, /ANTHROPIC_API_KEY=<您的 API 密钥>/);
 });
 
 test("shell installer protects existing workflow without force", async () => {
@@ -35,7 +35,7 @@ test("shell installer protects existing workflow without force", async () => {
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /already exists/);
+  assert.match(result.stderr, /已存在/);
 });
 
 test("shell installer yes mode uses the default model", async () => {
@@ -61,7 +61,7 @@ test("shell installer renders only the selected Xiaomi secret", async () => {
   assert.match(result.stdout, /XIAOMI_API_KEY: \$\{\{ secrets\.XIAOMI_API_KEY \}\}/);
   assert.doesNotMatch(result.stdout, /ANTHROPIC_API_KEY/);
   assert.doesNotMatch(result.stdout, /OPENAI_API_KEY/);
-  assert.match(result.stderr, /XIAOMI_API_KEY=<your api key>/);
+  assert.match(result.stderr, /XIAOMI_API_KEY=<您的 API 密钥>/);
 });
 
 test("shell installer supports custom provider secret names", async () => {
@@ -73,7 +73,7 @@ test("shell installer supports custom provider secret names", async () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /CUSTOM_PROVIDER_API_KEY: \$\{\{ secrets\.CUSTOM_PROVIDER_API_KEY \}\}/);
-  assert.match(result.stderr, /CUSTOM_PROVIDER_API_KEY=<your api key>/);
+  assert.match(result.stderr, /CUSTOM_PROVIDER_API_KEY=<您的 API 密钥>/);
 });
 
 test("shell installer rejects invalid model format", async () => {
@@ -84,7 +84,7 @@ test("shell installer rejects invalid model format", async () => {
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /provider\/model format/);
+  assert.match(result.stderr, /格式/);
 });
 
 test("shell installer renders custom action image", async () => {
@@ -96,7 +96,7 @@ test("shell installer renders custom action image", async () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /uses: docker:\/\/registry\.example\.com\/team\/opencode:test/);
-  assert.match(result.stderr, /Action image: registry\.example\.com\/team\/opencode:test/);
+  assert.match(result.stderr, /Action 镜像: registry\.example\.com\/team\/opencode:test/);
 });
 
 async function gitTempRepo() {
