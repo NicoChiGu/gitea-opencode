@@ -109,6 +109,17 @@ fi
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 TEMPLATE="$SCRIPT_DIR/templates/opencode.yml"
 DEST=".gitea/workflows/opencode.yml"
+if [ -f "$DEST" ]; then
+  EXISTING_CHECKOUT=$(awk '
+    /- name: Checkout repository/ { found=1; next }
+    found && /uses:/ { print $2; exit }
+  ' "$DEST" 2>/dev/null) || EXISTING_CHECKOUT=""
+  if [ -n "$EXISTING_CHECKOUT" ]; then
+    if [ "$CHECKOUT_ACTION" = "actions/checkout@v4" ]; then
+      CHECKOUT_ACTION="$EXISTING_CHECKOUT"
+    fi
+  fi
+fi
 
 if [ -f "$DEST" ] && [ "$FORCE" -ne 1 ] && [ "$DRY_RUN" -ne 1 ]; then
   if [ "$NON_INTERACTIVE" -eq 1 ] || [ ! -t 0 ] || [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
@@ -194,7 +205,7 @@ Xiaomi MiMo V2.5 Pro Amsterdam;xiaomi-token-plan-ams/mimo-v2.5-pro"
           for (const mId of Object.keys(models)) {
             if (mId === "claude-sonnet-4-6" || mId === "claude-sonnet-4") continue;
             const m = models[mId];
-            const isFree = mId.endsWith("-free") || mId === "big-pickle" || (m.cost && m.cost.input === 0);
+            const isFree = (mId.endsWith("-free") || mId === "big-pickle" || (m.cost && m.cost.input === 0)) && (m.status !== "deprecated");
             if (isFree) {
               let name = m.name;
               if (!name.endsWith("Free") && !name.includes("免费")) name += " (免费)";
@@ -238,7 +249,7 @@ try:
         if mId in ["claude-sonnet-4-6", "claude-sonnet-4"]:
             continue
         m = models[mId]
-        is_free = mId.endswith("-free") or mId == "big-pickle" or (m.get("cost") and m.get("cost").get("input") == 0)
+        is_free = (mId.endswith("-free") or mId == "big-pickle" or (m.get("cost") and m.get("cost").get("input") == 0)) and (m.get("status") != "deprecated")
         if is_free:
             name = m["name"]
             if not name.endswith("Free") and "免费" not in name:

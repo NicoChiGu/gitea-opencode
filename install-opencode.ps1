@@ -44,6 +44,14 @@ if ([string]::IsNullOrWhiteSpace($ScriptRoot)) {
 }
 $Template = Join-Path $ScriptRoot "templates/opencode.yml"
 $Destination = Join-Path ".gitea" "workflows/opencode.yml"
+if (Test-Path $Destination) {
+  $ExistingContent = Get-Content -Raw -Path $Destination
+  if ($ExistingContent -match "(?s)-\s*name:\s*Checkout repository\s+uses:\s*(\S+)") {
+    if ($CheckoutAction -eq "actions/checkout@v4") {
+      $CheckoutAction = $Matches[1]
+    }
+  }
+}
 
 if ((Test-Path $Destination) -and -not $Force -and -not $DryRun) {
   if ($Yes -or $NonInteractive -or [Console]::IsInputRedirected) {
@@ -95,7 +103,7 @@ try {
     foreach ($mId in $OpencodeModels.PSObject.Properties.Name) {
       if ($mId -eq "claude-sonnet-4-6" -or $mId -eq "claude-sonnet-4") { continue }
       $m = $OpencodeModels.$mId
-      $isFree = $mId.EndsWith("-free") -or $mId -eq "big-pickle" -or ($m.cost -and $m.cost.input -eq 0)
+      $isFree = ($mId.EndsWith("-free") -or $mId -eq "big-pickle" -or ($m.cost -and $m.cost.input -eq 0)) -and ($null -eq $m.status -or $m.status -ne "deprecated")
       if ($isFree) {
         $displayName = $m.name
         if (-not $displayName.EndsWith("Free") -and -not $displayName.Contains("免费")) {

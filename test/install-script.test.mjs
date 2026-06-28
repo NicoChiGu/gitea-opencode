@@ -111,6 +111,29 @@ test("shell installer renders custom checkout action", async () => {
   assert.match(result.stdout, /uses: checkout@v4/);
 });
 
+test("shell installer detects existing checkout action from existing workflow file", async () => {
+  const cwd = await gitTempRepo();
+  await mkdir(join(cwd, ".gitea/workflows"), { recursive: true });
+  await writeFile(
+    join(cwd, ".gitea/workflows/opencode.yml"),
+    `
+jobs:
+  opencode:
+    steps:
+      - name: Checkout repository
+        uses: custom-checkout@v99
+`
+  );
+
+  const result = spawnSync("sh", [installer, "--dry-run", "--yes"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /uses: custom-checkout@v99/);
+});
+
 async function gitTempRepo() {
   const cwd = await mkdtemp(join(tmpdir(), "gitea-opencode-test-"));
   spawnSync("git", ["init"], { cwd, encoding: "utf8" });
